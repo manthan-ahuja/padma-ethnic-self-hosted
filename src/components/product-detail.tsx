@@ -22,6 +22,9 @@ export function ProductDetail({ product }: { product: Product }) {
   const [deliveryError, setDeliveryError] = useState("");
   const selectedImage = product.gallery[activeImage];
   const liked = wishlist.includes(product.id);
+  const selectedVariant = product.variants?.find((variant) =>
+    (!variant.color || variant.color === selectedColor) && (!variant.size || variant.size === selectedSize),
+  );
 
   useEffect(() => { rememberProduct(product.id); }, [product.id, rememberProduct]);
 
@@ -31,7 +34,12 @@ export function ProductDetail({ product }: { product: Product }) {
       setConfirmation("");
       return;
     }
-    addToCart(product, { color: selectedColor, size: selectedSize }, quantity);
+    if (product.source === "shopify" && (!selectedVariant || !selectedVariant.availableForSale)) {
+      setSelectionError("This size and colour combination is currently unavailable.");
+      setConfirmation("");
+      return;
+    }
+    addToCart(product, { color: selectedColor, size: selectedSize, variantId: selectedVariant?.id }, quantity);
     setSelectionError("");
     setConfirmation(`Added ${quantity} × ${product.name} in ${selectedColor}, ${selectedSize} to your bag.`);
   };

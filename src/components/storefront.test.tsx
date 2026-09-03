@@ -3,8 +3,9 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { CommerceProvider } from "@/components/commerce-provider";
 import { Storefront } from "@/components/storefront";
+import { products } from "@/lib/products";
 
-function renderStorefront() { return render(<CommerceProvider><Storefront /></CommerceProvider>); }
+function renderStorefront() { return render(<CommerceProvider><Storefront products={products} /></CommerceProvider>); }
 
 describe("Storefront", () => {
   it("filters the collection by category", async () => {

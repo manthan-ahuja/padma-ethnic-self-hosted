@@ -6,9 +6,10 @@ import { notFound } from "next/navigation";
 import { ProductDetail } from "@/components/product-detail";
 import { SiteFooter, SiteHeader } from "@/components/site-chrome";
 import { RecentlyViewed } from "@/components/recently-viewed";
-import { getProductById, products } from "@/lib/products";
+import { getProductByHandle, getProducts } from "@/lib/shopify/repository";
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const products = await getProducts();
   return products.map((product) => ({ id: product.id }));
 }
 
@@ -18,7 +19,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const product = getProductById(id);
+  const product = await getProductByHandle(id);
   if (!product) return { title: "Product not found — Padma Ethnic Wear" };
 
   return {
@@ -40,9 +41,10 @@ export default async function ProductPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const product = getProductById(id);
+  const product = await getProductByHandle(id);
   if (!product) notFound();
 
+  const products = await getProducts();
   const related = products
     .filter((item) => item.id !== product.id && item.category === product.category)
     .slice(0, 3);
@@ -63,7 +65,7 @@ export default async function ProductPage({
         <div>
           <p className="eyebrow">Find your fit</p>
           <h2 id="size-guide-title">Size guide</h2>
-          <p>Garment measurements may vary slightly because every Padma piece is finished by hand.</p>
+          <p>Use the final garment measurements published for each product before choosing your size.</p>
         </div>
         <div className="size-guide-table" role="region" aria-label="Garment size guide" tabIndex={0}>
           <table>
@@ -101,7 +103,7 @@ export default async function ProductPage({
         <p>There are no verified-purchase reviews yet. Reviews will appear here only after the commerce backend can confirm completed orders.</p>
       </section>
 
-      <RecentlyViewed currentProductId={product.id} />
+      <RecentlyViewed currentProductId={product.id} products={products} />
 
       <SiteFooter />
     </div>

@@ -72,7 +72,7 @@ The suite checks desktop and mobile overflow, key homepage sections, collection 
 - Search across names, categories, colours and materials
 - Search suggestions, popular searches, persistent recent searches and no-result recommendations
 - Shared browser-persistent cart with colour and size variant lines
-- Dedicated cart page with quantities, removals, totals, shipping-progress presentation and disabled checkout integration state
+- Dedicated cart page with quantities, removals, totals, shipping progress and Shopify-hosted checkout handoff when configured
 - Shared browser-persistent wishlist and recently viewed products
 - Product full-screen image viewer, fit/model notes, size validation, quantity controls, share action, delivery-pincode validation and sticky mobile add-to-bag bar
 - Complete-the-look recommendations and an honest verified-review empty state
@@ -85,25 +85,70 @@ The following require Shopify or an equivalent commerce backend and external ser
 
 - Live inventory and low-stock messaging
 - Back-in-stock subscriptions
-- Checkout, payment, tax and discount validation
+- Checkout, payment, tax and discount validation while Shopify credentials are absent
 - Pincode serviceability, courier ETA and COD eligibility
 - Verified customer reviews and customer photographs
 - Newsletter delivery and first-order offers
 - Live Instagram feed
 - Customer accounts and cross-device wishlist synchronization
 
-## Recommended Shopify integration
+## Shopify backend integration
 
-1. Import final products and variants into Shopify and replace direct imports from `src/lib/products.ts` with Storefront API queries.
-2. Create cart lines server-side or with Shopify Cart API, revalidating price, variant and inventory.
-3. Replace the disabled cart checkout control with Shopify-hosted checkout.
-4. Map collection handles to the existing `/collections/[slug]` routes.
-5. Connect real inventory to availability filters, low-stock states and back-in-stock notifications.
-6. Connect a logistics service for pincode-specific delivery and COD checks.
-7. Add verified-purchase reviews through a provider that can validate Shopify orders.
-8. Connect the newsletter and Instagram sections only after official accounts and consent requirements are confirmed.
+The storefront now includes a server-only Shopify Storefront API adapter. When the required environment variables exist, Shopify becomes authoritative for product names, handles, descriptions, images, prices, variants and availability. Product selections carry Shopify variant IDs into the browser cart, and the cart page creates a real Shopify Cart before redirecting to Shopify-hosted checkout.
 
-Never expose Admin API tokens or payment secrets in browser code, and never trust totals submitted by the client.
+When the variables are absent, the website intentionally stays in `local-preview` mode and checkout remains disabled. A configured Shopify request failure is surfaced rather than silently mixing stale local prices with live data.
+
+### Shopify Admin setup
+
+1. Create or open the Padma Ethnic Shopify store.
+2. In Shopify Admin, add the **Headless** sales channel (preferred) or create a custom storefront app.
+3. Create a storefront and grant only these Storefront API permissions:
+   - unauthenticated product/catalog read access,
+   - unauthenticated inventory read access,
+   - unauthenticated checkout/cart write access.
+4. Copy the **Storefront API access token**. Do not use or expose an Admin API token.
+5. Copy `.env.example` to `.env.local` and replace the placeholder values locally:
+
+```env
+SHOPIFY_STORE_DOMAIN=your-store.myshopify.com
+SHOPIFY_STOREFRONT_ACCESS_TOKEN=your-storefront-token
+SHOPIFY_API_VERSION=2026-07
+```
+
+6. Restart `npm run dev`. Do not commit `.env.local`.
+7. Publish every product to the Headless/custom storefront sales channel. Draft or unpublished products will not appear.
+
+### Product data conventions
+
+Use Shopify product handles as storefront URLs: `/products/<handle>`.
+
+Set Shopify **Product type** to one of:
+
+- `Sarees`
+- `Kurta Sets`
+- `Lehengas`
+- `Co-ords`
+
+Use tags such as `New`, `Bestseller`, `Festive`, `Wedding`, `Everyday`, `Limited`, and `Sale` to drive curated storefront views and badges. Create actual Shopify variants for every size/colour combination; a variant without a real Shopify merchandise ID cannot enter live checkout.
+
+The adapter optionally reads these product metafields in namespace `custom`:
+
+- `material`
+- `care`
+- `included`
+- `origin`
+- `delivery_estimate`
+- `sku`
+
+Shopify Admin controls the catalog and inventory. Wishlist and recently viewed data remain browser-local. Customer accounts, verified-review tooling, back-in-stock subscriptions, logistics-specific pincode checks, newsletters and Instagram require separate integrations.
+
+### Security model
+
+- Shopify tokens are used only by server modules and the server checkout route.
+- No Admin API credential is required by this storefront.
+- The checkout endpoint accepts only Shopify ProductVariant GIDs and bounded integer quantities.
+- Shopify revalidates inventory, totals, tax, delivery and discounts before payment.
+- Payment details are collected only by Shopify-hosted checkout.
 
 ## Content and asset note
 

@@ -6,8 +6,18 @@ export interface ProductImage {
   position?: string;
 }
 
+export interface ProductVariant {
+  id: string;
+  title: string;
+  color?: string;
+  size?: string;
+  availableForSale: boolean;
+  price: number;
+}
+
 export interface Product {
   id: string;
+  shopifyProductId?: string;
   name: string;
   category: ProductCategory;
   price: number;
@@ -33,11 +43,14 @@ export interface Product {
   fit?: string;
   modelInfo?: string;
   measurements?: string;
+  variants?: ProductVariant[];
+  source?: "local" | "shopify";
 }
 
 export interface ProductSelection {
-  color?: string;
-  size?: string;
+  color: string;
+  size: string;
+  variantId?: string;
 }
 
 export interface CartItem {

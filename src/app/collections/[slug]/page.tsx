@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { CatalogView } from "@/components/catalog-view";
 import { PageShell } from "@/components/site-chrome";
 import { collectionMeta, productsForCollection } from "@/lib/collections";
-import { products } from "@/lib/products";
+import { getProducts } from "@/lib/shopify/repository";
 
 export function generateStaticParams() {
   return Object.keys(collectionMeta).map((slug) => ({ slug }));
@@ -20,6 +20,7 @@ export default async function CollectionPage({ params }: { params: Promise<{ slu
   const { slug } = await params;
   const collection = collectionMeta[slug];
   if (!collection) notFound();
+  const products = await getProducts();
   const selected = productsForCollection(products, slug);
 
   return <PageShell><main>

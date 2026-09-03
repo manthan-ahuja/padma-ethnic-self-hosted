@@ -4,17 +4,17 @@ import { Search, X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { searchProducts } from "@/lib/catalog";
-import { products } from "@/lib/products";
+import type { Product } from "@/lib/types";
 import { ProductCard } from "./product-card";
 
 const popular = ["Sarees", "Silk", "Lehengas", "Cotton", "Festive"];
 const RECENT_SEARCH_KEY = "padma-recent-searches";
 
-export function SearchExperience() {
+export function SearchExperience({ products }: { products: Product[] }) {
   const params = useSearchParams();
   const [query, setQuery] = useState(params.get("q") ?? "");
   const [recent, setRecent] = useState<string[]>([]);
-  const results = useMemo(() => searchProducts(products, query), [query]);
+  const results = useMemo(() => searchProducts(products, query), [products, query]);
   useEffect(() => { queueMicrotask(() => { try { setRecent(JSON.parse(window.localStorage?.getItem(RECENT_SEARCH_KEY) ?? "[]")); } catch {} }); }, []);
   const remember = (term: string) => {
     if (!term.trim()) return;

@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { filterProducts, type CatalogCategory } from "@/lib/catalog";
-import { products } from "@/lib/products";
 import type { Product } from "@/lib/types";
 import { useCommerce } from "@/components/commerce-provider";
 
@@ -120,7 +119,7 @@ function ProductCard({ product }: { product: Product }) {
   );
 }
 
-export function Storefront() {
+export function Storefront({ products }: { products: Product[] }) {
   const [category, setCategory] = useState<CatalogCategory>("All");
   const { cart, setQuantity, removeFromCart } = useCommerce();
   const [cartOpen, setCartOpen] = useState(false);
@@ -128,7 +127,7 @@ export function Storefront() {
   const [newsletterStatus, setNewsletterStatus] = useState("");
   const visibleProducts = useMemo(
     () => filterProducts(products, category),
-    [category],
+    [category, products],
   );
 
   useEffect(() => {
