@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./expanded.css";
 
 :root {
   --ink: #3d291d;

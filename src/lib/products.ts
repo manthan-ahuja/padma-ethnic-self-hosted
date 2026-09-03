@@ -18,7 +18,7 @@ function defineProduct(input: ProductInput): Product {
   return { ...product, gallery };
 }
 
-export const products: Product[] = [
+const rawProducts: Product[] = [
   defineProduct({
     id: "neelambari-silk-saree",
     name: "Neelambari Silk Saree",
@@ -187,6 +187,19 @@ export const products: Product[] = [
     imagePosition: "50% 45%",
   }),
 ];
+
+// The current asset set contains one representative image per look, not verified
+// front, back and detail photographs of each SKU. Keep galleries truthful until
+// the final campaign asset pack is supplied.
+export const products: Product[] = rawProducts.map((product, index) => ({
+  ...product,
+  hoverImage: product.image,
+  gallery: [product.gallery[0]],
+  isNew: product.badge?.toLowerCase().includes("new") ?? index > 5,
+  isBestseller: product.badge?.toLowerCase().includes("best") ?? false,
+  occasions: product.category === "Co-ords" ? ["Everyday", "Festive"] : ["Festive", "Wedding"],
+  fit: product.category === "Sarees" ? "Classic drape · unstitched" : "Regular, easy silhouette",
+}));
 
 export function getProductById(id: string) {
   return products.find((product) => product.id === id);

@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+/qa/expanded-*.png
 
 # next.js
 /.next/

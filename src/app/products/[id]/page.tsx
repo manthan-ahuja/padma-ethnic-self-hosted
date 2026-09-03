@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Search, ShoppingBag } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { notFound } from "next/navigation";
 import { ProductDetail } from "@/components/product-detail";
+import { SiteFooter, SiteHeader } from "@/components/site-chrome";
+import { RecentlyViewed } from "@/components/recently-viewed";
 import { getProductById, products } from "@/lib/products";
 
 export function generateStaticParams() {
@@ -47,26 +49,7 @@ export default async function ProductPage({
 
   return (
     <div className="product-page-shell">
-      <div className="detail-announcement">
-        <span>Complimentary shipping across India</span>
-        <span>✦</span>
-        <span>Easy 7-day returns</span>
-      </div>
-
-      <header className="detail-site-header">
-        <Link href="/#collection" className="detail-back-link">
-          <ArrowLeft size={17} /> <span>Back to collection</span>
-        </Link>
-        <Link href="/" className="detail-brand" aria-label="Padma Ethnic Wear home">
-          <Image src="/brand/padma-lotus.png" alt="" width={42} height={30} sizes="42px" />
-          <span>PADMA</span>
-          <small>ETHNIC WEAR</small>
-        </Link>
-        <div className="detail-header-actions">
-          <button type="button" aria-label="Search"><Search size={19} /></button>
-          <button type="button" aria-label="Open shopping bag"><ShoppingBag size={19} /><span>0</span></button>
-        </div>
-      </header>
+      <SiteHeader />
 
       <nav className="product-breadcrumbs" aria-label="Breadcrumb">
         <Link href="/">Home</Link><span>/</span>
@@ -112,11 +95,15 @@ export default async function ProductPage({
         </section>
       )}
 
-      <footer className="detail-footer">
-        <Image src="/brand/padma-logo-transparent.png" alt="Padma Ethnic Wear — Est. 2026" width={145} height={142} sizes="145px" />
-        <p>Contemporary Indian wear, made with intention.</p>
-        <div><span>© 2026 Padma Ethnic</span><span>India · INR</span><span>Privacy · Terms</span></div>
-      </footer>
+      <section className="verified-reviews" aria-labelledby="reviews-title">
+        <p className="eyebrow">Community notes</p>
+        <h2 id="reviews-title">Verified reviews</h2>
+        <p>There are no verified-purchase reviews yet. Reviews will appear here only after the commerce backend can confirm completed orders.</p>
+      </section>
+
+      <RecentlyViewed currentProductId={product.id} />
+
+      <SiteFooter />
     </div>
   );
 }

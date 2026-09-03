@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   ArrowRight,
   Heart,
-  Camera,
+
   Menu,
   Minus,
   Plus,
@@ -14,11 +14,11 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useReducer, useState } from "react";
-import { cartReducer, initialCartState } from "@/lib/cart";
+import { useEffect, useMemo, useState } from "react";
 import { filterProducts, type CatalogCategory } from "@/lib/catalog";
 import { products } from "@/lib/products";
 import type { Product } from "@/lib/types";
+import { useCommerce } from "@/components/commerce-provider";
 
 const categories: CatalogCategory[] = [
   "All",
@@ -51,14 +51,9 @@ function BrandMark() {
   );
 }
 
-function ProductCard({
-  product,
-  onAdd,
-}: {
-  product: Product;
-  onAdd: (product: Product) => void;
-}) {
-  const [liked, setLiked] = useState(false);
+function ProductCard({ product }: { product: Product }) {
+  const { wishlist, toggleWishlist } = useCommerce();
+  const liked = wishlist.includes(product.id);
 
   return (
     <article className="product-card">
@@ -90,18 +85,17 @@ function ProductCard({
           type="button"
           aria-label={`${liked ? "Remove" : "Add"} ${product.name} ${liked ? "from" : "to"} wishlist`}
           aria-pressed={liked}
-          onClick={() => setLiked((value) => !value)}
+          onClick={() => toggleWishlist(product.id)}
         >
           <Heart size={18} fill={liked ? "currentColor" : "none"} />
         </button>
-        <button
+        <Link
           className="quick-add"
-          type="button"
-          onClick={() => onAdd(product)}
-          aria-label={`Add ${product.name} to bag`}
+          href={`/products/${product.id}`}
+          aria-label={`Choose options for ${product.name}`}
         >
-          Add to bag <Plus size={16} />
-        </button>
+          Choose options <Plus size={16} />
+        </Link>
       </div>
       <div className="product-copy">
         <div>
@@ -128,9 +122,10 @@ function ProductCard({
 
 export function Storefront() {
   const [category, setCategory] = useState<CatalogCategory>("All");
-  const [cart, dispatch] = useReducer(cartReducer, initialCartState);
+  const { cart, setQuantity, removeFromCart } = useCommerce();
   const [cartOpen, setCartOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [newsletterStatus, setNewsletterStatus] = useState("");
   const visibleProducts = useMemo(
     () => filterProducts(products, category),
     [category],
@@ -143,10 +138,6 @@ export function Storefront() {
     };
   }, [cartOpen, menuOpen]);
 
-  const addToCart = (product: Product) => {
-    dispatch({ type: "add", product });
-    setCartOpen(true);
-  };
 
   return (
     <div id="top">
@@ -166,15 +157,15 @@ export function Storefront() {
           <Menu size={21} />
         </button>
         <nav className="desktop-nav" aria-label="Primary navigation">
-          <a href="#new">New</a>
-          <a href="#collection">Shop</a>
-          <a href="#story">Our craft</a>
+          <Link href="/collections/new-arrivals">New</Link>
+          <Link href="/collections/all">Shop</Link>
+          <Link href="/our-craft">Our craft</Link>
         </nav>
         <BrandMark />
         <div className="header-actions">
-          <button className="icon-button search-button" type="button" aria-label="Search">
+          <Link className="icon-button search-button" href="/search" aria-label="Search">
             <Search size={20} />
-          </button>
+          </Link>
           <button
             className="bag-button"
             type="button"
@@ -206,7 +197,6 @@ export function Storefront() {
               src="/images/padma-hero.webp"
               alt="Model wearing a rich purple saree with a gold woven border"
               fill
-              unoptimized
               loading="eager"
               fetchPriority="high"
               sizes="(max-width: 800px) 100vw, 53vw"
@@ -234,24 +224,24 @@ export function Storefront() {
             </p>
           </div>
           <div className="category-grid">
-            <a className="category-tile category-large" href="#collection" onClick={() => setCategory("Sarees")}>
+            <Link className="category-tile category-large" href="/collections/sarees">
               <Image src="/images/padma-ivory.jpg" alt="Blue silk saree" fill sizes="(max-width: 720px) 100vw, 50vw" />
               <span className="image-scrim" />
               <span className="category-number">01</span>
               <span className="category-label">Sarees <ArrowRight size={18} /></span>
-            </a>
-            <a className="category-tile" href="#collection" onClick={() => setCategory("Kurta Sets")}>
+            </Link>
+            <Link className="category-tile" href="/collections/kurta-sets">
               <Image src="/images/padma-sage.jpg" alt="Green embroidered kurta set" fill sizes="(max-width: 720px) 100vw, 25vw" />
               <span className="image-scrim" />
               <span className="category-number">02</span>
               <span className="category-label">Kurta sets <ArrowRight size={18} /></span>
-            </a>
-            <a className="category-tile" href="#collection" onClick={() => setCategory("Lehengas")}>
+            </Link>
+            <Link className="category-tile" href="/collections/festive-wear">
               <Image src="/images/padma-rose.jpg" alt="Marigold embroidered festive dress" fill sizes="(max-width: 720px) 100vw, 25vw" />
               <span className="image-scrim" />
               <span className="category-number">03</span>
               <span className="category-label">Celebration <ArrowRight size={18} /></span>
-            </a>
+            </Link>
           </div>
         </section>
 
@@ -278,10 +268,25 @@ export function Storefront() {
           </div>
           <div className="product-grid">
             {visibleProducts.map((product) => (
-              <ProductCard key={product.id} product={product} onAdd={addToCart} />
+              <ProductCard key={product.id} product={product} />
             ))}
           </div>
         </section>
+
+        <section className="home-edits" aria-labelledby="home-edits-title">
+          <div className="section-heading split-heading"><div><p className="eyebrow">Curated paths</p><h2 id="home-edits-title">Begin with<br /><em>the feeling.</em></h2></div><p className="heading-aside">Shop by occasion, price or the chapter that feels closest to your calendar.</p></div>
+          <div className="home-edit-grid">
+            <Link href="/collections/new-arrivals"><span>Just in</span><h3>New arrivals</h3><p>Fresh additions to the Padma wardrobe.</p><ArrowRight size={18} /></Link>
+            <Link href="/collections/bestsellers"><span>Signature</span><h3>Padma favourites</h3><p>The silhouettes that define our opening edit.</p><ArrowRight size={18} /></Link>
+            <Link href="/collections/festive-wear"><span>By occasion</span><h3>Festive gatherings</h3><p>Colour and ease for the moments shared together.</p><ArrowRight size={18} /></Link>
+            <Link href="/collections/wedding-edit"><span>The invitation</span><h3>Wedding edit</h3><p>From ceremony mornings to evening celebrations.</p><ArrowRight size={18} /></Link>
+          </div>
+          <div className="shop-by-price"><p>Shop by price</p><div><Link href="/collections/all">Under ₹10,000</Link><Link href="/collections/all">₹10,000–₹15,000</Link><Link href="/collections/all">Above ₹15,000</Link></div></div>
+        </section>
+
+        <section className="wedding-campaign" aria-labelledby="wedding-title"><div><Image src="/images/padma-rose.jpg" alt="Padma wedding edit in marigold and rose tones" fill sizes="(max-width: 800px) 100vw, 55vw" /></div><div><p className="eyebrow light">The wedding edit</p><h2 id="wedding-title">For every ritual,<br /><em>and every dance.</em></h2><p>Discover expressive sarees, fluid lehengas and modern sets designed to move through the whole celebration.</p><Link className="primary-cta light-cta" href="/collections/wedding-edit">Enter the edit <ArrowRight size={16} /></Link></div></section>
+
+        <section className="home-trust-strip" aria-label="Shopping assurances"><div><strong>Complimentary delivery</strong><span>Across India</span></div><div><strong>7-day returns</strong><span>On eligible pieces</span></div><div><strong>Personal assistance</strong><span>Chat with Padma on WhatsApp</span></div><a href="https://wa.me/919820081628" target="_blank" rel="noreferrer">Start a conversation <ArrowRight size={14} /></a></section>
 
         <section className="craft-story" id="story" aria-labelledby="craft-title">
           <div className="craft-image">
@@ -290,30 +295,31 @@ export function Storefront() {
           <div className="craft-copy">
             <Sparkles size={24} strokeWidth={1.25} aria-hidden="true" />
             <p className="eyebrow">The Padma promise</p>
-            <h2 id="craft-title">Rooted in craft.<br /><em>Made for now.</em></h2>
-            <p>
-              We partner with skilled makers across India to celebrate time-honoured
-              techniques through lighter, versatile silhouettes. Every Padma piece
-              carries the human touch—small variations that make it entirely yours.
-            </p>
-            <a className="text-link" href="#collection">Discover our process <ArrowRight size={16} /></a>
+            <h2 id="craft-title">Rooted in detail.<br /><em>Made for now.</em></h2>
+            <p>We are shaping a wardrobe around considered material, versatile silhouettes and product descriptions that distinguish verified fact from creative direction.</p>
+            <Link className="text-link" href="/our-craft">Discover our process <ArrowRight size={16} /></Link>
             <div className="craft-values">
-              <span><strong>Small</strong> thoughtful batches</span>
-              <span><strong>Made</strong> across India</span>
-              <span><strong>Natural</strong> rich textiles</span>
+              <span><strong>Clear</strong> specific product notes</span>
+              <span><strong>Honest</strong> verified origin details</span>
+              <span><strong>Useful</strong> care and fit guidance</span>
             </div>
           </div>
         </section>
+
+        <section className="founder-note"><Image src="/brand/padma-lotus.png" alt="" width={68} height={48} /><p className="eyebrow">From the house of Padma</p><blockquote>“We are building a wardrobe that respects memory without asking you to dress like the past.”</blockquote><Link href="/about" className="text-link">Read our story <ArrowRight size={15} /></Link></section>
+
+        <section className="community-preview"><div><p className="eyebrow">The Padma community</p><h2>Stories, not borrowed praise.</h2><p>Verified reviews and customer photographs will appear here only after real orders are fulfilled. Until then, we will not invent testimonials or press mentions.</p></div><div className="community-images">{["/images/padma-ivory.jpg", "/images/padma-rose.jpg", "/images/padma-sage.jpg"].map((src, index) => <span key={src}><Image src={src} alt="" fill sizes="(max-width: 700px) 33vw, 18vw" /><b>0{index + 1}</b></span>)}</div><small>The live Instagram feed will connect when Padma&apos;s official account is supplied.</small></section>
 
         <section className="newsletter" aria-labelledby="newsletter-title">
           <p className="eyebrow light">Letters from Padma</p>
           <h2 id="newsletter-title">A little beauty,<br /><em>delivered slowly.</em></h2>
           <p>New collections, craft stories and private previews—never too often.</p>
-          <form className="newsletter-form" onSubmit={(event) => event.preventDefault()}>
+          <form className="newsletter-form" onSubmit={(event) => { event.preventDefault(); setNewsletterStatus("Thank you. Live email signup will activate with the marketing platform."); }}>
             <label className="sr-only" htmlFor="email">Email address</label>
             <input id="email" type="email" placeholder="Your email address" required />
             <button type="submit" aria-label="Subscribe to Padma letters"><ArrowRight size={20} /></button>
           </form>
+          {newsletterStatus && <p className="newsletter-status" role="status">{newsletterStatus}</p>}
         </section>
       </main>
 
@@ -332,9 +338,9 @@ export function Storefront() {
             </a>
             <p>Contemporary Indian wear,<br />made with intention.</p>
           </div>
-          <div className="footer-links"><strong>Shop</strong><a href="#new">New arrivals</a><a href="#collection">Sarees</a><a href="#collection">Kurta sets</a><a href="#collection">Lehengas</a></div>
-          <div className="footer-links"><strong>Help</strong><a href="#">Shipping</a><a href="#">Returns</a><a href="#">Size guide</a><a href="#">Contact us</a></div>
-          <div className="footer-links"><strong>Follow</strong><a href="#"><Camera size={15} /> Instagram</a><a href="#">Pinterest</a></div>
+          <div className="footer-links"><strong>Shop</strong><Link href="/collections/new-arrivals">New arrivals</Link><Link href="/collections/sarees">Sarees</Link><Link href="/collections/kurta-sets">Kurta sets</Link><Link href="/collections/lehengas">Lehengas</Link></div>
+          <div className="footer-links"><strong>Discover</strong><Link href="/about">About Padma</Link><Link href="/our-craft">Our craft</Link><Link href="/lookbook">Lookbook</Link><Link href="/journal">Journal</Link></div>
+          <div className="footer-links"><strong>Help</strong><Link href="/cart">Shopping bag</Link><Link href="/wishlist">Wishlist</Link><Link href="/search">Search</Link></div>
         </div>
         <div className="footer-bottom"><span>© 2026 Padma Ethnic</span><span>India · INR</span><span>Privacy · Terms</span></div>
       </footer>
@@ -342,7 +348,7 @@ export function Storefront() {
       {menuOpen && (
         <div className="mobile-menu" role="dialog" aria-modal="true" aria-label="Navigation menu">
           <div className="mobile-menu-top"><BrandMark /><button className="icon-button" onClick={() => setMenuOpen(false)} aria-label="Close menu"><X /></button></div>
-          <nav><a href="#new" onClick={() => setMenuOpen(false)}>New arrivals</a><a href="#collection" onClick={() => setMenuOpen(false)}>Sarees</a><a href="#collection" onClick={() => setMenuOpen(false)}>Kurta sets</a><a href="#collection" onClick={() => setMenuOpen(false)}>Lehengas</a><a href="#story" onClick={() => setMenuOpen(false)}>Our craft</a></nav>
+          <nav><Link href="/collections/new-arrivals" onClick={() => setMenuOpen(false)}>New arrivals</Link><Link href="/collections/sarees" onClick={() => setMenuOpen(false)}>Sarees</Link><Link href="/collections/kurta-sets" onClick={() => setMenuOpen(false)}>Kurta sets</Link><Link href="/collections/lehengas" onClick={() => setMenuOpen(false)}>Lehengas</Link><Link href="/our-craft" onClick={() => setMenuOpen(false)}>Our craft</Link></nav>
           <p>Complimentary shipping across India</p>
         </div>
       )}
@@ -357,15 +363,18 @@ export function Storefront() {
             ) : (
               <>
                 <div className="cart-items">
-                  {cart.items.map(({ product, quantity }) => (
-                    <article className="cart-item" key={product.id}>
+                  {cart.items.map(({ product, quantity, selection, lineId }) => {
+                    const itemId = lineId ?? product.id;
+                    return (
+                    <article className="cart-item" key={itemId}>
                       <div className="cart-thumb"><Image src={product.image} alt="" fill sizes="100px" /></div>
-                      <div className="cart-item-copy"><p>{product.category}</p><h3>{product.name}</h3><span>{money.format(product.price)}</span><div className="quantity"><button onClick={() => dispatch({ type: "setQuantity", productId: product.id, quantity: quantity - 1 })} aria-label={`Decrease ${product.name} quantity`}><Minus size={13} /></button><span>{quantity}</span><button onClick={() => dispatch({ type: "setQuantity", productId: product.id, quantity: quantity + 1 })} aria-label={`Increase ${product.name} quantity`}><Plus size={13} /></button></div></div>
-                      <button className="remove-item" onClick={() => dispatch({ type: "remove", productId: product.id })}>Remove</button>
+                      <div className="cart-item-copy"><p>{product.category}</p><h3>{product.name}</h3>{selection && <small>{selection.color} · {selection.size}</small>}<span>{money.format(product.price)}</span><div className="quantity"><button onClick={() => setQuantity(itemId, quantity - 1)} aria-label={`Decrease ${product.name} quantity`}><Minus size={13} /></button><span>{quantity}</span><button onClick={() => setQuantity(itemId, quantity + 1)} aria-label={`Increase ${product.name} quantity`}><Plus size={13} /></button></div></div>
+                      <button className="remove-item" onClick={() => removeFromCart(itemId)}>Remove</button>
                     </article>
-                  ))}
+                    );
+                  })}
                 </div>
-                <div className="cart-summary"><div><span>Subtotal</span><strong>{money.format(cart.subtotal)}</strong></div><p>Taxes included. Shipping calculated at checkout.</p><button className="checkout-button">Proceed to checkout <ArrowRight size={17} /></button><small>Cashfree secure checkout will be connected in the backend phase.</small></div>
+                <div className="cart-summary"><div><span>Subtotal</span><strong>{money.format(cart.subtotal)}</strong></div><p>Taxes included. Shipping calculated at checkout.</p><Link className="checkout-button" href="/cart">Review bag <ArrowRight size={17} /></Link><small>Secure checkout will activate after Shopify is connected.</small></div>
               </>
             )}
           </aside>

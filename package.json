@@ -10,7 +10,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "qa:e2e": "node qa/e2e.mjs"
+    "qa:e2e": "node qa/e2e.mjs",
+    "qa:expanded": "node qa/e2e-expanded.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.34.0",

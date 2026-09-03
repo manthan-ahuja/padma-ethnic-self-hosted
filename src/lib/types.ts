@@ -27,11 +27,24 @@ export interface Product {
   deliveryEstimate: string;
   sku: string;
   imagePosition?: string;
+  occasions?: string[];
+  isNew?: boolean;
+  isBestseller?: boolean;
+  fit?: string;
+  modelInfo?: string;
+  measurements?: string;
+}
+
+export interface ProductSelection {
+  color?: string;
+  size?: string;
 }
 
 export interface CartItem {
   product: Product;
   quantity: number;
+  selection?: ProductSelection;
+  lineId?: string;
 }
 
 export interface CartState {

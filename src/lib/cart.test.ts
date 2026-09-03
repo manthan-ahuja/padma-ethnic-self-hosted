@@ -29,4 +29,23 @@ describe("cartReducer", () => {
     expect(state.itemCount).toBe(1);
     expect(state.subtotal).toBe(8990);
   });
+
+  it("keeps different colour and size selections as separate lines", () => {
+    const blue = cartReducer(initialCartState, {
+      type: "add",
+      product,
+      selection: { color: "Indigo", size: "Free Size" },
+    });
+    const pink = cartReducer(blue, {
+      type: "add",
+      product,
+      selection: { color: "Rani Pink", size: "Free Size" },
+    });
+
+    expect(pink.items).toHaveLength(2);
+    expect(pink.items.map((item) => item.selection?.color)).toEqual([
+      "Indigo",
+      "Rani Pink",
+    ]);
+  });
 });
