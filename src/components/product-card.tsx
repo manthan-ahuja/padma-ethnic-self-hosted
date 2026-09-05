@@ -11,11 +11,12 @@ const money = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR
 export function ProductCard({ product }: { product: Product }) {
   const { wishlist, toggleWishlist } = useCommerce();
   const liked = wishlist.includes(product.id);
+  const displayColors = product.colors.filter((color) => color.toLowerCase() !== "default");
   return <article className="product-card">
     <div className="product-visual">
       <Link className="product-image-link" href={`/products/${product.id}`} aria-label={`View ${product.name}`}>
-        <Image src={product.image} alt={product.name} fill sizes="(max-width: 600px) 100vw, (max-width: 1000px) 50vw, 25vw" style={{ objectPosition: product.imagePosition }} className="product-image product-image-primary" />
-        <Image src={product.hoverImage} alt="" fill sizes="(max-width: 600px) 100vw, (max-width: 1000px) 50vw, 25vw" className="product-image product-image-hover" />
+        <Image src={product.image} alt={`${product.name}${displayColors.length ? ` in ${displayColors.join(" and ")}` : ""}`} fill sizes="(max-width: 600px) 100vw, (max-width: 1000px) 50vw, 25vw" style={{ objectPosition: product.imagePosition }} className="product-image product-image-primary" />
+        {product.hoverImage !== product.image && <Image src={product.hoverImage} alt="" fill sizes="(max-width: 600px) 100vw, (max-width: 1000px) 50vw, 25vw" className="product-image product-image-hover" />}
       </Link>
       {product.badge && <span className="product-badge">{product.badge}</span>}
       <button type="button" className={`heart-button ${liked ? "is-liked" : ""}`} onClick={() => toggleWishlist(product.id)} aria-label={`${liked ? "Remove" : "Add"} ${product.name} ${liked ? "from" : "to"} wishlist`} aria-pressed={liked}><Heart size={19} fill={liked ? "currentColor" : "none"} /></button>

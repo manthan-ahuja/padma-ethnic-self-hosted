@@ -79,6 +79,7 @@
 .order-summary>div { display:flex; justify-content:space-between; gap:20px; padding:15px 0; border-bottom:1px solid var(--line); font-size:10px; }
 .order-summary label { display:grid; gap:8px; margin:22px 0; font-size:8px; letter-spacing:.12em; text-transform:uppercase; }
 .order-summary input { border:1px solid var(--line); background:rgba(255,255,255,.4); padding:13px; }
+.discount-note { margin: 20px 0; color: var(--muted); font-size: 9px; line-height: 1.55; }
 .order-summary .checkout-button:disabled { opacity:.7; cursor:not-allowed; }
 .integration-note { display:flex; gap:9px; color:var(--muted); font-size:8px; line-height:1.5; }
 .cart-empty-page { min-height:420px; text-align:center; display:grid; place-items:center; align-content:center; }

@@ -14,8 +14,9 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { filterProducts, type CatalogCategory } from "@/lib/catalog";
+import { MAX_CART_QUANTITY } from "@/lib/cart";
 import type { Product } from "@/lib/types";
 import { useCommerce } from "@/components/commerce-provider";
 
@@ -35,7 +36,7 @@ const money = new Intl.NumberFormat("en-IN", {
 
 function BrandMark() {
   return (
-    <a className="brand" href="#top" aria-label="Padma Ethnic Wear home">
+    <a className="brand" href="#top">
       <Image
         className="brand-lotus"
         src="/brand/padma-lotus.png"
@@ -53,6 +54,7 @@ function BrandMark() {
 function ProductCard({ product }: { product: Product }) {
   const { wishlist, toggleWishlist } = useCommerce();
   const liked = wishlist.includes(product.id);
+  const displayColors = product.colors.filter((color) => color.toLowerCase() !== "default");
 
   return (
     <article className="product-card">
@@ -64,19 +66,19 @@ function ProductCard({ product }: { product: Product }) {
         >
           <Image
             src={product.image}
-            alt={`${product.name} in ${product.colors.join(" and ")}`}
+            alt={`${product.name}${displayColors.length ? ` in ${displayColors.join(" and ")}` : ""}`}
             fill
             sizes="(max-width: 640px) 88vw, (max-width: 1024px) 45vw, 25vw"
             style={{ objectPosition: product.imagePosition }}
             className="product-image product-image-primary"
           />
-          <Image
+          {product.hoverImage !== product.image && <Image
             src={product.hoverImage}
             alt=""
             fill
             sizes="(max-width: 640px) 88vw, (max-width: 1024px) 45vw, 25vw"
             className="product-image product-image-hover"
-          />
+          />}
         </Link>
         {product.badge && <span className="product-badge">{product.badge}</span>}
         <button
@@ -108,12 +110,12 @@ function ProductCard({ product }: { product: Product }) {
           )}
         </div>
         <p className="product-description">{product.description}</p>
-        <div className="swatches" aria-label={`Available colours: ${product.colors.join(", ")}`}>
-          {product.colors.map((color) => (
+        {displayColors.length > 0 && <div className="swatches" aria-label={`Available colours: ${displayColors.join(", ")}`}>
+          {displayColors.map((color) => (
             <span key={color} title={color} className={`swatch swatch-${color.toLowerCase().replaceAll(" ", "-")}`} />
           ))}
-          <span className="color-count">{product.colors.length} colours</span>
-        </div>
+          <span className="color-count">{displayColors.length} {displayColors.length === 1 ? "colour" : "colours"}</span>
+        </div>}
       </div>
     </article>
   );
@@ -125,15 +127,31 @@ export function Storefront({ products }: { products: Product[] }) {
   const [cartOpen, setCartOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [newsletterStatus, setNewsletterStatus] = useState("");
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const menuCloseRef = useRef<HTMLButtonElement>(null);
+  const bagButtonRef = useRef<HTMLButtonElement>(null);
+  const cartCloseRef = useRef<HTMLButtonElement>(null);
   const visibleProducts = useMemo(
     () => filterProducts(products, category),
     [category, products],
   );
 
   useEffect(() => {
-    document.body.style.overflow = cartOpen || menuOpen ? "hidden" : "";
+    if (!cartOpen && !menuOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    const returnFocus = cartOpen ? bagButtonRef.current : menuButtonRef.current;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setCartOpen(false);
+      setMenuOpen(false);
+    };
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", onKeyDown);
+    (cartOpen ? cartCloseRef.current : menuCloseRef.current)?.focus();
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKeyDown);
+      returnFocus?.focus();
     };
   }, [cartOpen, menuOpen]);
 
@@ -148,10 +166,12 @@ export function Storefront({ products }: { products: Product[] }) {
 
       <header className="site-header">
         <button
+          ref={menuButtonRef}
           className="icon-button mobile-only"
           type="button"
           onClick={() => setMenuOpen(true)}
           aria-label="Open menu"
+          aria-expanded={menuOpen}
         >
           <Menu size={21} />
         </button>
@@ -166,6 +186,7 @@ export function Storefront({ products }: { products: Product[] }) {
             <Search size={20} />
           </Link>
           <button
+            ref={bagButtonRef}
             className="bag-button"
             type="button"
             onClick={() => setCartOpen(true)}
@@ -206,7 +227,7 @@ export function Storefront({ products }: { products: Product[] }) {
               <p>Woven stories<br />for modern rituals</p>
             </div>
           </div>
-          <a className="scroll-cue" href="#new" aria-label="Scroll to new arrivals">
+          <a className="scroll-cue" href="#new">
             <span>Discover</span><span className="scroll-line" />
           </a>
         </section>
@@ -280,7 +301,7 @@ export function Storefront({ products }: { products: Product[] }) {
             <Link href="/collections/festive-wear"><span>By occasion</span><h3>Festive gatherings</h3><p>Colour and ease for the moments shared together.</p><ArrowRight size={18} /></Link>
             <Link href="/collections/wedding-edit"><span>The invitation</span><h3>Wedding edit</h3><p>From ceremony mornings to evening celebrations.</p><ArrowRight size={18} /></Link>
           </div>
-          <div className="shop-by-price"><p>Shop by price</p><div><Link href="/collections/all">Under ₹10,000</Link><Link href="/collections/all">₹10,000–₹15,000</Link><Link href="/collections/all">Above ₹15,000</Link></div></div>
+          <div className="shop-by-price"><p>Shop by price</p><div><Link href="/collections/all?price=under-10000">Under ₹10,000</Link><Link href="/collections/all?price=10000-15000">₹10,000–₹15,000</Link><Link href="/collections/all?price=over-15000">Above ₹15,000</Link></div></div>
         </section>
 
         <section className="wedding-campaign" aria-labelledby="wedding-title"><div><Image src="/images/padma-rose.jpg" alt="Padma wedding edit in marigold and rose tones" fill sizes="(max-width: 800px) 100vw, 55vw" /></div><div><p className="eyebrow light">The wedding edit</p><h2 id="wedding-title">For every ritual,<br /><em>and every dance.</em></h2><p>Discover expressive sarees, fluid lehengas and modern sets designed to move through the whole celebration.</p><Link className="primary-cta light-cta" href="/collections/wedding-edit">Enter the edit <ArrowRight size={16} /></Link></div></section>
@@ -346,7 +367,7 @@ export function Storefront({ products }: { products: Product[] }) {
 
       {menuOpen && (
         <div className="mobile-menu" role="dialog" aria-modal="true" aria-label="Navigation menu">
-          <div className="mobile-menu-top"><BrandMark /><button className="icon-button" onClick={() => setMenuOpen(false)} aria-label="Close menu"><X /></button></div>
+          <div className="mobile-menu-top"><BrandMark /><button ref={menuCloseRef} className="icon-button" onClick={() => setMenuOpen(false)} aria-label="Close menu"><X /></button></div>
           <nav><Link href="/collections/new-arrivals" onClick={() => setMenuOpen(false)}>New arrivals</Link><Link href="/collections/sarees" onClick={() => setMenuOpen(false)}>Sarees</Link><Link href="/collections/kurta-sets" onClick={() => setMenuOpen(false)}>Kurta sets</Link><Link href="/collections/lehengas" onClick={() => setMenuOpen(false)}>Lehengas</Link><Link href="/our-craft" onClick={() => setMenuOpen(false)}>Our craft</Link></nav>
           <p>Complimentary shipping across India</p>
         </div>
@@ -356,7 +377,7 @@ export function Storefront({ products }: { products: Product[] }) {
         <div className="drawer-layer">
           <button className="drawer-backdrop" onClick={() => setCartOpen(false)} aria-label="Close shopping bag" />
           <aside className="cart-drawer" role="dialog" aria-modal="true" aria-label="Your shopping bag">
-            <div className="drawer-heading"><div><p className="eyebrow">Your selection</p><h2>Shopping bag <span>({cart.itemCount})</span></h2></div><button className="icon-button" onClick={() => setCartOpen(false)} aria-label="Close shopping bag"><X /></button></div>
+            <div className="drawer-heading"><div><p className="eyebrow">Your selection</p><h2>Shopping bag <span>({cart.itemCount})</span></h2></div><button ref={cartCloseRef} className="icon-button" onClick={() => setCartOpen(false)} aria-label="Close shopping bag"><X /></button></div>
             {cart.items.length === 0 ? (
               <div className="empty-cart"><ShoppingBag size={35} strokeWidth={1.2} /><h3>Your bag is waiting</h3><p>Explore pieces made to become part of your story.</p><button className="primary-cta" onClick={() => setCartOpen(false)}>Continue shopping</button></div>
             ) : (
@@ -367,13 +388,13 @@ export function Storefront({ products }: { products: Product[] }) {
                     return (
                     <article className="cart-item" key={itemId}>
                       <div className="cart-thumb"><Image src={product.image} alt="" fill sizes="100px" /></div>
-                      <div className="cart-item-copy"><p>{product.category}</p><h3>{product.name}</h3>{selection && <small>{selection.color} · {selection.size}</small>}<span>{money.format(product.price)}</span><div className="quantity"><button onClick={() => setQuantity(itemId, quantity - 1)} aria-label={`Decrease ${product.name} quantity`}><Minus size={13} /></button><span>{quantity}</span><button onClick={() => setQuantity(itemId, quantity + 1)} aria-label={`Increase ${product.name} quantity`}><Plus size={13} /></button></div></div>
+                      <div className="cart-item-copy"><p>{product.category}</p><h3>{product.name}</h3>{selection && <small>{[selection.color.toLowerCase() === "default" ? "" : selection.color, selection.size].filter(Boolean).join(" · ")}</small>}<span>{money.format(product.price)}</span><div className="quantity"><button onClick={() => setQuantity(itemId, quantity - 1)} aria-label={`Decrease ${product.name} quantity`}><Minus size={13} /></button><span>{quantity}</span><button disabled={quantity >= MAX_CART_QUANTITY} onClick={() => setQuantity(itemId, quantity + 1)} aria-label={`Increase ${product.name} quantity`}><Plus size={13} /></button></div></div>
                       <button className="remove-item" onClick={() => removeFromCart(itemId)}>Remove</button>
                     </article>
                     );
                   })}
                 </div>
-                <div className="cart-summary"><div><span>Subtotal</span><strong>{money.format(cart.subtotal)}</strong></div><p>Taxes included. Shipping calculated at checkout.</p><Link className="checkout-button" href="/cart">Review bag <ArrowRight size={17} /></Link><small>Secure checkout will activate after Shopify is connected.</small></div>
+                <div className="cart-summary"><div><span>Subtotal</span><strong>{money.format(cart.subtotal)}</strong></div><p>Taxes included. Shipping calculated at checkout.</p><Link className="checkout-button" href="/cart">Review bag <ArrowRight size={17} /></Link><small>Inventory and totals are revalidated by Shopify at checkout.</small></div>
               </>
             )}
           </aside>

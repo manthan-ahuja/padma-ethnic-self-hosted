@@ -32,8 +32,8 @@ export type ShopifyProductNode = {
 
 const fallbackImage = "/images/padma-ivory.jpg";
 
-function categoryFrom(productType = "", tags: string[] = []): ProductCategory {
-  const value = `${productType} ${tags.join(" ")}`.toLowerCase();
+function categoryFrom(productType = "", tags: string[] = [], title = ""): ProductCategory {
+  const value = `${productType} ${tags.join(" ")} ${title}`.toLowerCase();
   if (value.includes("saree")) return "Sarees";
   if (value.includes("lehenga")) return "Lehengas";
   if (value.includes("co-ord") || value.includes("coord")) return "Co-ords";
@@ -65,7 +65,7 @@ export function mapShopifyProduct(node: ShopifyProductNode): Product {
   const tags = node.tags ?? [];
   const price = Number(node.priceRange.minVariantPrice.amount);
   const compareAt = Number(node.compareAtPriceRange?.minVariantPrice?.amount ?? 0);
-  const category = categoryFrom(node.productType, tags);
+  const category = categoryFrom(node.productType, tags, node.title);
 
   return {
     id: node.handle,

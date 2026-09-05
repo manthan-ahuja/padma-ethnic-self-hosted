@@ -17,10 +17,14 @@ export function productsForCollection(products: Product[], slug: string): Produc
   if (slug === "all") return products;
   const categoryMap: Record<string, Product["category"]> = { sarees: "Sarees", "kurta-sets": "Kurta Sets", lehengas: "Lehengas", "co-ords": "Co-ords" };
   if (categoryMap[slug]) return products.filter((product) => product.category === categoryMap[slug]);
-  if (slug === "new-arrivals") return products.filter((product) => product.badge?.toLowerCase().includes("new"));
-  if (slug === "bestsellers") return products.filter((product) => product.badge?.toLowerCase().includes("best"));
+  if (slug === "new-arrivals") return products.filter((product) => product.isNew || product.badge?.toLowerCase().includes("new"));
+  if (slug === "bestsellers") return products.filter((product) => product.isBestseller || product.badge?.toLowerCase().includes("best"));
   if (slug === "sale") return products.filter((product) => Boolean(product.originalPrice));
-  if (slug === "wedding-edit") return products.filter((product) => ["Sarees", "Lehengas"].includes(product.category));
-  if (slug === "festive-wear") return products.filter((product) => product.category !== "Co-ords" || product.name.includes("Kaftan"));
+  if (slug === "wedding-edit") return products.filter((product) => product.source !== "shopify"
+    ? ["Sarees", "Lehengas"].includes(product.category)
+    : product.occasions?.some((occasion) => occasion.toLowerCase() === "wedding"));
+  if (slug === "festive-wear") return products.filter((product) => product.source !== "shopify"
+    ? product.category !== "Co-ords" || product.name.includes("Kaftan")
+    : product.occasions?.some((occasion) => ["festive", "occasion"].includes(occasion.toLowerCase())));
   return [];
 }

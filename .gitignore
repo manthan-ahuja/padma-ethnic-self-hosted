@@ -13,6 +13,9 @@
 # testing
 /coverage
 /qa/expanded-*.png
+/qa/chrome-profile/
+/qa/lighthouse-*.json
+/qa/output/
 
 # next.js
 /.next/

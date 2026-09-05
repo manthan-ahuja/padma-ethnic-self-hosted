@@ -27,6 +27,7 @@ export async function shopifyFetch<T>({ query, variables, cache = "no-store", re
     body: JSON.stringify({ query, variables }),
     cache,
     next: revalidate ? { revalidate } : undefined,
+    signal: AbortSignal.timeout(10_000),
   });
   const payload = await response.json() as ShopifyResponse<T>;
   if (!response.ok || payload.errors?.length || !payload.data) {

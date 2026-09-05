@@ -3,12 +3,12 @@
 
 :root {
   --ink: #3d291d;
-  --muted: #796858;
+  --muted: #6f5d4e;
   --paper: #f8f3e8;
   --paper-deep: #ede2ce;
   --wine: #76243f;
   --wine-deep: #4a2d1d;
-  --vermillion: #b84365;
+  --vermillion: #aa2f56;
   --gold: #b68a4d;
   --teal: #4f817b;
   --line: rgba(61, 41, 29, 0.16);
@@ -25,6 +25,22 @@ button, a { -webkit-tap-highlight-color: transparent; }
 button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid var(--vermillion); outline-offset: 4px; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 .mobile-only { display: none !important; }
+
+/* Skip below-the-fold layout and paint work until sections approach the viewport.
+   The intrinsic size keeps the scrollbar stable while content is deferred. */
+.category-showcase,
+.collection-section,
+.home-edits,
+.wedding-campaign,
+.home-trust-strip,
+.craft-story,
+.founder-note,
+.community-preview,
+.newsletter,
+.footer {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 800px;
+}
 
 .announcement { height: 29px; background: var(--wine-deep); color: #f8f3e8; display: flex; align-items: center; justify-content: center; gap: 16px; font-size: 9px; letter-spacing: .17em; text-transform: uppercase; }
 .announcement-separator { color: var(--gold); font-size: 7px; }
@@ -139,7 +155,7 @@ em { font-weight: 400; }
 .footer-links { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; color: var(--muted); font-size: 10px; }
 .footer-links strong { color: var(--ink); letter-spacing: .14em; text-transform: uppercase; font-size: 8px; margin-bottom: 5px; }
 .footer-links a { display: flex; align-items: center; gap: 7px; }
-.footer-bottom { border-top: 1px solid var(--line); padding-top: 22px; display: flex; justify-content: space-between; color: #8d7967; font-size: 8px; letter-spacing: .08em; text-transform: uppercase; }
+.footer-bottom { border-top: 1px solid var(--line); padding-top: 22px; display: flex; justify-content: space-between; color: var(--muted); font-size: 8px; letter-spacing: .08em; text-transform: uppercase; }
 
 .drawer-layer { position: fixed; inset: 0; z-index: 100; }
 .drawer-backdrop { position: absolute; inset: 0; width: 100%; border: 0; background: rgba(20,10,7,.45); backdrop-filter: blur(3px); cursor: default; }
@@ -262,7 +278,7 @@ em { font-weight: 400; }
 .detail-footer { background: #eee3d1; padding: 65px clamp(20px, 4vw, 64px) 25px; text-align: center; }
 .detail-footer > img { width: 130px; height: auto; }
 .detail-footer > p { color: var(--muted); margin: 12px 0 50px; font-family: var(--serif); font-size: 16px; }
-.detail-footer > div { border-top: 1px solid var(--line); padding-top: 22px; display: flex; justify-content: space-between; color: #8d7967; font-size: 8px; letter-spacing: .08em; text-transform: uppercase; }
+.detail-footer > div { border-top: 1px solid var(--line); padding-top: 22px; display: flex; justify-content: space-between; color: var(--muted); font-size: 8px; letter-spacing: .08em; text-transform: uppercase; }
 
 @media (max-width: 1050px) {
   .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px 14px; }

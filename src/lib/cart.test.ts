@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cartReducer, initialCartState } from "@/lib/cart";
+import { cartReducer, initialCartState, MAX_CART_QUANTITY } from "@/lib/cart";
 import { products } from "@/lib/products";
 
 const product = products[0];
@@ -47,5 +47,19 @@ describe("cartReducer", () => {
       "Indigo",
       "Rani Pink",
     ]);
+  });
+
+  it("caps a cart line at the checkout API limit", () => {
+    const state = cartReducer(initialCartState, { type: "add", product, quantity: MAX_CART_QUANTITY });
+    const incremented = cartReducer(state, { type: "add", product });
+    const manuallyRaised = cartReducer(incremented, { type: "setQuantity", productId: product.id, quantity: 999 });
+
+    expect(manuallyRaised.items[0].quantity).toBe(MAX_CART_QUANTITY);
+    expect(manuallyRaised.itemCount).toBe(MAX_CART_QUANTITY);
+  });
+
+  it("discards malformed persisted cart lines", () => {
+    const state = cartReducer(initialCartState, { type: "replace", state: { items: [{}] } as never });
+    expect(state).toEqual(initialCartState);
   });
 });

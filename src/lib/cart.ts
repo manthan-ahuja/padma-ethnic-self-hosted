@@ -1,4 +1,6 @@
-import type { CartState, Product, ProductSelection } from "./types";
+import type { CartItem, CartState, Product, ProductSelection } from "./types";
+
+export const MAX_CART_QUANTITY = 20;
 
 export type CartAction =
   | { type: "add"; product: Product; selection?: ProductSelection; quantity?: number }
@@ -12,7 +14,7 @@ export const initialCartState: CartState = {
   subtotal: 0,
 };
 
-function withTotals(items: CartState["items"]): CartState {
+function withTotals(items: CartItem[]): CartState {
   return {
     items,
     itemCount: items.reduce((total, item) => total + item.quantity, 0),
@@ -23,14 +25,42 @@ function withTotals(items: CartState["items"]): CartState {
   };
 }
 
+function clampQuantity(quantity: number): number {
+  if (!Number.isFinite(quantity)) return 0;
+  return Math.max(0, Math.min(MAX_CART_QUANTITY, Math.floor(quantity)));
+}
+
 export function getLineId(productId: string, selection?: ProductSelection): string {
   return [productId, selection?.color ?? "", selection?.size ?? ""].join("::");
 }
 
+function normalizePersistedItems(value: unknown): CartItem[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((candidate) => {
+    if (!candidate || typeof candidate !== "object") return [];
+    const item = candidate as Partial<CartItem>;
+    if (!item.product || typeof item.product !== "object" || typeof item.product.id !== "string" || !Number.isFinite(item.product.price)) return [];
+    const quantity = clampQuantity(Number(item.quantity));
+    if (quantity < 1) return [];
+    const selection = item.selection && typeof item.selection.color === "string" && typeof item.selection.size === "string"
+      ? item.selection
+      : undefined;
+    return [{
+      product: item.product,
+      quantity,
+      ...(selection ? { selection, lineId: getLineId(item.product.id, selection) } : {}),
+    }];
+  });
+}
+
 export function cartReducer(state: CartState, action: CartAction): CartState {
-  if (action.type === "replace") return withTotals(action.state.items);
+  if (action.type === "replace") {
+    return withTotals(normalizePersistedItems((action.state as Partial<CartState>)?.items));
+  }
 
   if (action.type === "add") {
+    const addedQuantity = clampQuantity(action.quantity ?? 1);
+    if (addedQuantity < 1) return state;
     const lineId = getLineId(action.product.id, action.selection);
     const existing = state.items.find(
       (item) => (item.lineId ?? getLineId(item.product.id, item.selection)) === lineId,
@@ -39,7 +69,7 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
     const items = existing
       ? state.items.map((item) =>
           (item.lineId ?? getLineId(item.product.id, item.selection)) === lineId
-            ? { ...item, quantity: item.quantity + (action.quantity ?? 1) }
+            ? { ...item, quantity: clampQuantity(item.quantity + addedQuantity) }
             : item,
         )
       : [
@@ -47,11 +77,11 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
           action.selection
             ? {
                 product: action.product,
-                quantity: action.quantity ?? 1,
+                quantity: addedQuantity,
                 selection: action.selection,
                 lineId,
               }
-            : { product: action.product, quantity: action.quantity ?? 1 },
+            : { product: action.product, quantity: addedQuantity },
         ];
 
     return withTotals(items);
@@ -72,7 +102,7 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
       .map((item) =>
         (item.lineId ?? item.product.id) === action.productId ||
         item.product.id === action.productId
-          ? { ...item, quantity: action.quantity }
+          ? { ...item, quantity: clampQuantity(action.quantity) }
           : item,
       )
       .filter((item) => item.quantity > 0),

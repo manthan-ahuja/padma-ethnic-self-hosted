@@ -3,12 +3,32 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Heart, Menu, Search, ShoppingBag, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useCommerce } from "./commerce-provider";
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const { cart, wishlist } = useCommerce();
+
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    const returnFocus = menuButtonRef.current;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", onKeyDown);
+    closeButtonRef.current?.focus();
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKeyDown);
+      returnFocus?.focus();
+    };
+  }, [open]);
+
   const links = [
     ["New arrivals", "/collections/new-arrivals"],
     ["Sarees", "/collections/sarees"],
@@ -19,7 +39,7 @@ export function SiteHeader() {
   return <>
     <div className="detail-announcement"><span>Complimentary shipping across India</span><span>✦</span><span>Easy 7-day returns on eligible pieces</span></div>
     <header className="global-header">
-      <button className="global-menu" type="button" onClick={() => setOpen(true)} aria-label="Open menu"><Menu size={20} /></button>
+      <button ref={menuButtonRef} className="global-menu" type="button" onClick={() => setOpen(true)} aria-label="Open menu" aria-expanded={open}><Menu size={20} /></button>
       <nav className="global-nav" aria-label="Main navigation">{links.slice(0, 3).map(([label, href]) => <Link key={href} href={href}>{label}</Link>)}</nav>
       <Link href="/" className="detail-brand" aria-label="Padma Ethnic Wear home">
         <Image src="/brand/padma-lotus.png" alt="" width={42} height={30} sizes="42px" />
@@ -32,7 +52,7 @@ export function SiteHeader() {
       </div>
     </header>
     {open && <div className="global-mobile-menu" role="dialog" aria-modal="true" aria-label="Navigation menu">
-      <button type="button" onClick={() => setOpen(false)} aria-label="Close menu"><X /></button>
+      <button ref={closeButtonRef} type="button" onClick={() => setOpen(false)} aria-label="Close menu"><X /></button>
       <nav>{links.map(([label, href]) => <Link key={href} href={href} onClick={() => setOpen(false)}>{label}</Link>)}</nav>
       <Link href="/about" onClick={() => setOpen(false)}>About Padma</Link>
     </div>}

@@ -55,13 +55,13 @@ export default async function ProductPage({
 
       <nav className="product-breadcrumbs" aria-label="Breadcrumb">
         <Link href="/">Home</Link><span>/</span>
-        <Link href="/#collection">{product.category}</Link><span>/</span>
+        <Link href={`/collections/${product.category.toLowerCase().replaceAll(" ", "-")}`}>{product.category}</Link><span>/</span>
         <span aria-current="page">{product.name}</span>
       </nav>
 
       <ProductDetail product={product} />
 
-      <section className="size-guide-section" id="size-guide" aria-labelledby="size-guide-title">
+      {product.sizes.length > 1 && <section className="size-guide-section" id="size-guide" aria-labelledby="size-guide-title">
         <div>
           <p className="eyebrow">Find your fit</p>
           <h2 id="size-guide-title">Size guide</h2>
@@ -80,7 +80,7 @@ export default async function ProductPage({
             </tbody>
           </table>
         </div>
-      </section>
+      </section>}
 
       {related.length > 0 && (
         <section className="related-products" aria-labelledby="related-title">
@@ -100,7 +100,7 @@ export default async function ProductPage({
       <section className="verified-reviews" aria-labelledby="reviews-title">
         <p className="eyebrow">Community notes</p>
         <h2 id="reviews-title">Verified reviews</h2>
-        <p>There are no verified-purchase reviews yet. Reviews will appear here only after the commerce backend can confirm completed orders.</p>
+        <p>There are no verified-purchase reviews yet. Reviews will appear here only after verified customer purchases.</p>
       </section>
 
       <RecentlyViewed currentProductId={product.id} products={products} />

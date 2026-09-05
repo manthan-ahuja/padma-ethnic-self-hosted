@@ -29,6 +29,11 @@ describe("mapShopifyProduct", () => {
     expect(product.variants?.[0]).toMatchObject({ id: "gid://shopify/ProductVariant/11", color: "Indigo", size: "Free Size", availableForSale: true });
   });
 
+  it("infers a missing Shopify product type from the product title", () => {
+    const product = mapShopifyProduct({ ...node, title: "Saree", productType: "", tags: [] });
+    expect(product.category).toBe("Sarees");
+  });
+
   it("does not invent secondary gallery images", () => {
     const product = mapShopifyProduct({ ...node, images: { nodes: [] }, featuredImage: null });
     expect(product.gallery).toHaveLength(1);

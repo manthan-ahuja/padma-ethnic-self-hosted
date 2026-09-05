@@ -8,10 +8,11 @@ import { ProductCard } from "./product-card";
 
 type Filters = { size: string; color: string; material: string; price: string; occasion: string };
 const emptyFilters: Filters = { size: "", color: "", material: "", price: "", occasion: "" };
+export type PriceFilter = "" | "under-10000" | "10000-15000" | "over-15000";
 
-export function CatalogView({ products }: { products: Product[] }) {
+export function CatalogView({ products, initialPrice = "" }: { products: Product[]; initialPrice?: PriceFilter }) {
   const [sort, setSort] = useState<CatalogSort>("featured");
-  const [filters, setFilters] = useState(emptyFilters);
+  const [filters, setFilters] = useState<Filters>(() => ({ ...emptyFilters, price: initialPrice }));
   const [showFilters, setShowFilters] = useState(false);
   const [visibleCount, setVisibleCount] = useState(4);
   const options = useMemo(() => ({
