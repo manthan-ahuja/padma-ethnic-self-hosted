@@ -9,7 +9,7 @@ const candidates = [
 const browser = await puppeteer.launch({
   executablePath: candidates[0],
   headless: true,
-  args: ["--no-sandbox", "--disable-gpu"],
+  args: ["--disable-gpu"],
 });
 const page = await browser.newPage();
 await page.setViewport({ width: 1440, height: 1000 });

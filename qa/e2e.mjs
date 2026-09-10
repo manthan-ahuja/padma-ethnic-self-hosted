@@ -18,7 +18,7 @@ if (!executablePath) {
 const browser = await puppeteer.launch({
   executablePath,
   headless: true,
-  args: ["--no-sandbox", "--disable-gpu"],
+  args: ["--disable-gpu"],
 });
 
 let page = await browser.newPage();

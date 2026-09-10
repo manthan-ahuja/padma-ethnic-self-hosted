@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "qa:e2e": "node qa/e2e.mjs",
     "qa:expanded": "node qa/e2e-expanded.mjs",
+    "qa:motion": "node qa/motion-check.mjs",
     "shopify:verify": "node scripts/verify-shopify.mjs",
     "shopify:verify-checkout": "node scripts/verify-shopify-checkout.mjs"
   },

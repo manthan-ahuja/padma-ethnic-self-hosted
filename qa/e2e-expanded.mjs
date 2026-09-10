@@ -10,7 +10,7 @@ await fs.mkdir(outputDir, { recursive: true });
 const browser = await puppeteer.launch({
   executablePath: chromePath,
   headless: true,
-  args: ["--no-sandbox", "--disable-dev-shm-usage"],
+  args: ["--disable-dev-shm-usage"],
 });
 
 const failures = [];
