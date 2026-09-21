@@ -259,6 +259,16 @@ describe("self-hosted commerce store", () => {
       collectionIds: [],
     });
 
+    const quote = await commerce.quoteOrder({
+      lines: [{ variantId: variant.id, quantity: 1 }],
+      couponCode: " welcome10 ",
+    });
+    const expectedDiscount = Math.round(product.price * 0.1);
+    const shipping = product.price >= 10_000 ? 0 : 199;
+    expect(quote).toEqual({ subtotal: product.price, shipping, discount: expectedDiscount, total: product.price - expectedDiscount + shipping, couponCode: "WELCOME10" });
+    expect((await commerce.getProduct(product.id))?.variants?.[0].inventoryQuantity).toBe(10);
+    expect((await commerce.listDiscounts()).find((discount) => discount.code === "WELCOME10")?.usedCount).toBe(0);
+
     const order = await commerce.createOrder({
       userId: firstBuyer.customer.id,
       addressId: firstBuyer.address.id,
@@ -268,8 +278,6 @@ describe("self-hosted commerce store", () => {
       couponCode: " welcome10 ",
     });
 
-    const expectedDiscount = Math.round(product.price * 0.1);
-    const shipping = product.price >= 10_000 ? 0 : 199;
     expect(order).toMatchObject({ couponCode: "WELCOME10", discount: expectedDiscount, total: product.price - expectedDiscount + shipping });
     await expect(commerce.createOrder({
       userId: secondBuyer.customer.id,

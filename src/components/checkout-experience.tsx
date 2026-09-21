@@ -5,7 +5,7 @@ import { CheckCircle2, ShieldCheck } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useEffect, useMemo, useState } from "react";
 import type { CustomerAddress } from "@/lib/customer-store";
-import type { CommerceOrder } from "@/lib/commerce-store";
+import type { CheckoutQuote, CommerceOrder } from "@/lib/commerce-store";
 import { useCommerce } from "./commerce-provider";
 
 const money = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
@@ -26,6 +26,9 @@ function AuthenticatedCheckout() {
   const [error, setError] = useState("");
   const [order, setOrder] = useState<CommerceOrder | null>(null);
   const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState("");
+  const [quote, setQuote] = useState<CheckoutQuote | null>(null);
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
   const [attemptKey] = useState(() => crypto.randomUUID());
   const lines = useMemo(() => cart.items.flatMap((item) => item.selection?.variantId
     ? [{ variantId: item.selection.variantId, quantity: item.quantity }]
@@ -55,7 +58,7 @@ function AuthenticatedCheckout() {
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ addressId, idempotencyKey: attemptKey, paymentMethod: "cod", lines, couponCode }),
+        body: JSON.stringify({ addressId, idempotencyKey: attemptKey, paymentMethod: "cod", lines, couponCode: appliedCoupon || undefined }),
       });
       const result = await response.json() as { order?: CommerceOrder; error?: string };
       if (!response.ok || !result.order) throw new Error(result.error || "Order could not be placed.");
@@ -68,12 +71,33 @@ function AuthenticatedCheckout() {
     }
   };
 
+  const applyCoupon = async () => {
+    if (!couponCode.trim() || !lines.length) { setError("Enter a coupon code."); return; }
+    setApplyingCoupon(true); setError("");
+    try {
+      const response = await fetch("/api/checkout/quote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ couponCode, lines }),
+      });
+      const result = await response.json() as { quote?: CheckoutQuote; error?: string };
+      if (!response.ok || !result.quote?.couponCode) throw new Error(result.error || "Coupon could not be applied.");
+      setQuote(result.quote);
+      setAppliedCoupon(result.quote.couponCode);
+      setCouponCode(result.quote.couponCode);
+    } catch (reason) {
+      setQuote(null); setAppliedCoupon("");
+      setError(reason instanceof Error ? reason.message : "Coupon could not be applied.");
+    } finally { setApplyingCoupon(false); }
+  };
+
   if (loading) return <main className="checkout-page"><p>Preparing secure checkout…</p></main>;
   if (order) return <main className="checkout-page checkout-success"><CheckCircle2 size={44} /><p className="eyebrow">Order placed</p><h1>Thank you</h1><p>Your order <strong>{order.number}</strong> has been reserved. Pay {money.format(order.total)} by cash on delivery.</p><Link className="primary-cta" href="/account">View my orders</Link></main>;
   if (!cart.items.length) return <main className="checkout-page"><p className="eyebrow">Checkout</p><h1>Your bag is empty</h1><Link className="primary-cta" href="/collections/all">Explore the collection</Link></main>;
   if (lines.length !== cart.items.length) return <main className="checkout-page"><h1>Refresh your bag</h1><p>One or more saved items no longer has a valid local inventory variant. Remove it and add it again.</p><Link className="primary-cta" href="/cart">Return to bag</Link></main>;
 
-  const shipping = cart.subtotal >= 10_000 ? 0 : 199;
+  const baseShipping = cart.subtotal >= 10_000 ? 0 : 199;
+  const summary = quote ?? { subtotal: cart.subtotal, shipping: baseShipping, discount: 0, total: cart.subtotal + baseShipping };
   return <main className="checkout-page">
     <header><p className="eyebrow">Secure self-hosted checkout</p><h1>Delivery &amp; payment</h1></header>
     <div className="checkout-grid">
@@ -83,7 +107,19 @@ function AuthenticatedCheckout() {
         <h2>Payment</h2>
         <label className="checkout-payment is-selected"><input type="radio" checked readOnly /><span><strong>Cash on delivery</strong><small>Pay when your order arrives.</small></span></label>
       </section>
-      <aside className="order-summary"><h2>Order summary</h2>{cart.items.map((item) => <div key={item.lineId ?? item.product.id}><span>{item.product.name} × {item.quantity}</span><strong>{money.format(item.product.price * item.quantity)}</strong></div>)}<div><span>Subtotal</span><strong>{money.format(cart.subtotal)}</strong></div><div><span>Delivery</span><strong>{shipping ? money.format(shipping) : "Complimentary"}</strong></div><label className="checkout-coupon"><span>Coupon code</span><input value={couponCode} onChange={(event) => setCouponCode(event.target.value.toUpperCase())} placeholder="WELCOME10" maxLength={40} /></label><p className="checkout-coupon-note">The final discount and total are validated by the server when you place the order.</p><div className="checkout-total"><span>Estimated total</span><strong>{money.format(cart.subtotal + shipping)}</strong></div><button className="checkout-button" type="button" disabled={!addressId || pending} onClick={placeOrder}>{pending ? "Placing order…" : "Place COD order"}</button>{error && <p className="selection-message is-error" role="alert">{error}</p>}<p className="integration-note"><ShieldCheck size={16} /> Prices, coupons, and stock are revalidated by the Padma backend before the order is created.</p></aside>
+      <aside className="order-summary">
+        <h2>Order summary</h2>
+        {cart.items.map((item) => <div key={item.lineId ?? item.product.id}><span>{item.product.name} × {item.quantity}</span><strong>{money.format(item.product.price * item.quantity)}</strong></div>)}
+        <div><span>Subtotal</span><strong>{money.format(summary.subtotal)}</strong></div>
+        <div><span>Delivery</span><strong>{summary.shipping ? money.format(summary.shipping) : "Complimentary"}</strong></div>
+        {summary.discount > 0 && <div className="checkout-discount"><span>Coupon discount</span><strong>−{money.format(summary.discount)}</strong></div>}
+        <div className="checkout-coupon"><label htmlFor="checkout-coupon-code">Coupon code</label><span className="checkout-coupon-control"><input id="checkout-coupon-code" value={couponCode} onChange={(event) => { setCouponCode(event.target.value.toUpperCase()); setQuote(null); setAppliedCoupon(""); }} placeholder="WELCOME10" maxLength={40} /><button type="button" disabled={applyingCoupon || !couponCode.trim()} onClick={applyCoupon}>{applyingCoupon ? "Applying…" : "Apply coupon"}</button></span></div>
+        {appliedCoupon && quote && <p className="checkout-coupon-success" role="status">{appliedCoupon} applied</p>}
+        <div className="checkout-total"><span>Total</span><strong>{money.format(summary.total)}</strong></div>
+        <button className="checkout-button" type="button" disabled={!addressId || pending || applyingCoupon} onClick={placeOrder}>{pending ? "Placing order…" : "Place cash on delivery order"}</button>
+        {error && <p className="selection-message is-error" role="alert">{error}</p>}
+        <p className="integration-note"><ShieldCheck size={16} /> Prices, coupons, and stock are revalidated by the Padma backend before the order is created.</p>
+      </aside>
     </div>
   </main>;
 }

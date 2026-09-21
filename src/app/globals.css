@@ -606,8 +606,14 @@ em { font-weight: 400; }
 .admin-picker h3 { grid-column: 1 / -1; }
 .admin-picker label { min-height: 38px; display: flex; align-items: center; gap: 8px; font-size: 10px; }
 .admin-picker input { accent-color: var(--wine); }
-.checkout-coupon { border-top: 1px solid var(--line); padding-top: 18px; }
-.checkout-coupon-note { margin: -12px 0 18px; color: var(--muted); font-size: 8px; line-height: 1.5; }
+.checkout-coupon { margin: 22px 0; border-top: 1px solid var(--line); padding-top: 18px; display: grid; gap: 8px; }
+.checkout-coupon > label { font-size: 8px; letter-spacing: .12em; text-transform: uppercase; }
+.checkout-coupon-control { display: flex; }
+.checkout-coupon-control input { min-width: 0; flex: 1; margin: 0; }
+.checkout-coupon-control button { min-width: 126px; border: 1px solid var(--wine); border-left: 0; padding: 0 14px; background: var(--wine); color: white; cursor: pointer; font-size: 8px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+.checkout-coupon-control button:disabled { cursor: not-allowed; opacity: .58; }
+.checkout-coupon-success { margin: -12px 0 18px; color: #285a40; font-size: 9px; font-weight: 700; }
+.order-summary .checkout-discount strong { color: #285a40; }
 
 @media (max-width: 1080px) {
   .admin-catalog-layout { grid-template-columns: 250px minmax(0, 1fr); }

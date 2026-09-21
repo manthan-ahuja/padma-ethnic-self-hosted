@@ -40,6 +40,14 @@ export type CommerceOrder = {
   items: Array<{ variantId: string; name: string; sku: string; color?: string; size?: string; price: number; quantity: number }>;
 };
 
+export type CheckoutQuote = {
+  subtotal: number;
+  shipping: number;
+  discount: number;
+  total: number;
+  couponCode?: string;
+};
+
 export type ProductWriteInput = Omit<Product, "source" | "variants"> & {
   active?: boolean;
   variants: Array<Omit<ProductVariant, "availableForSale"> & { inventoryQuantity: number; active?: boolean }>;
@@ -103,6 +111,52 @@ function parseJson<T>(value: unknown, fallback: T): T {
 function bool(value: unknown) { return Number(value) === 1; }
 function moneyFromMinor(value: unknown) { return Number(value) / 100; }
 function moneyToMinor(value: number) { return Math.round(value * 100); }
+
+type DiscountCalculation = CheckoutQuote & { discountId?: string };
+
+async function calculateCheckoutQuote(
+  db: Client | Transaction,
+  productSubtotals: Map<string, number>,
+  subtotal: number,
+  requestedCode?: string,
+): Promise<DiscountCalculation> {
+  let shipping = subtotal >= 10_000 ? 0 : 199;
+  let discount = 0;
+  let discountId: string | undefined;
+  let couponCode: string | undefined;
+  const requestedCoupon = requestedCode?.trim().toUpperCase();
+  if (requestedCoupon) {
+    const discountResult = await db.execute({ sql: "SELECT * FROM commerce_discounts WHERE code = ? AND active = 1 LIMIT 1", args: [requestedCoupon] });
+    const coupon = discountResult.rows[0];
+    if (!coupon) throw new DiscountCodeError("Coupon code is invalid or inactive.");
+    if (coupon.usage_limit != null && Number(coupon.used_count) >= Number(coupon.usage_limit)) throw new DiscountCodeError("This coupon has reached its usage limit.");
+    if (subtotal < moneyFromMinor(coupon.minimum_order_minor)) throw new DiscountCodeError(`Minimum order value is ₹${moneyFromMinor(coupon.minimum_order_minor).toLocaleString("en-IN")} for this coupon.`);
+    const scope = String(coupon.scope) as DiscountScope;
+    let eligibleProductIds = [...productSubtotals.keys()];
+    if (scope === "products") {
+      const scoped = await db.execute({ sql: "SELECT product_id FROM commerce_discount_products WHERE discount_id = ?", args: [String(coupon.id)] });
+      const allowed = new Set(scoped.rows.map((row) => String(row.product_id)));
+      eligibleProductIds = eligibleProductIds.filter((id) => allowed.has(id));
+    } else if (scope === "collections") {
+      const scoped = await db.execute({
+        sql: `SELECT DISTINCT cp.product_id FROM commerce_discount_collections dc
+              JOIN commerce_collection_products cp ON cp.collection_id = dc.collection_id
+              WHERE dc.discount_id = ?`, args: [String(coupon.id)],
+      });
+      const allowed = new Set(scoped.rows.map((row) => String(row.product_id)));
+      eligibleProductIds = eligibleProductIds.filter((id) => allowed.has(id));
+    }
+    const eligibleSubtotal = eligibleProductIds.reduce((sum, id) => sum + (productSubtotals.get(id) ?? 0), 0);
+    if (eligibleSubtotal <= 0) throw new DiscountCodeError("This coupon does not apply to the products in your bag.");
+    const type = String(coupon.type) as DiscountType;
+    if (type === "percentage") discount = Math.round(eligibleSubtotal * Number(coupon.value)) / 100;
+    if (type === "fixed_amount") discount = Math.min(eligibleSubtotal, moneyFromMinor(coupon.value));
+    if (type === "free_shipping") shipping = 0;
+    discountId = String(coupon.id);
+    couponCode = String(coupon.code);
+  }
+  return { subtotal, shipping, discount, total: Math.max(0, subtotal - discount + shipping), ...(couponCode ? { couponCode } : {}), ...(discountId ? { discountId } : {}) };
+}
 
 async function ensureCommerceSchema(db: Client) {
   const productColumns = await db.execute("PRAGMA table_info(commerce_products)");
@@ -688,6 +742,39 @@ export function createCommerceStore(url = databaseUrl(), authToken = process.env
       }
     },
 
+    async quoteOrder(input: { lines: Array<{ variantId: string; quantity: number }>; couponCode?: string }): Promise<CheckoutQuote> {
+      if (!input.lines.length || input.lines.length > 50) throw new CommerceValidationError("Cart is empty or too large.");
+      const quantities = new Map<string, number>();
+      for (const line of input.lines) {
+        if (!line.variantId || !Number.isInteger(line.quantity) || line.quantity < 1 || line.quantity > 20) throw new CommerceValidationError("Invalid cart line.");
+        quantities.set(line.variantId, (quantities.get(line.variantId) ?? 0) + line.quantity);
+      }
+      const db = await getClient();
+      const productSubtotals = new Map<string, number>();
+      let subtotal = 0;
+      for (const [variantId, quantity] of quantities) {
+        const result = await db.execute({
+          sql: `SELECT v.product_id, v.price_minor, v.inventory_quantity
+                FROM commerce_variants v JOIN commerce_products p ON p.id = v.product_id
+                WHERE v.id = ? AND v.active = 1 AND p.active = 1 LIMIT 1`, args: [variantId],
+        });
+        const variant = result.rows[0];
+        if (!variant || Number(variant.inventory_quantity) < quantity) throw new InventoryUnavailableError();
+        const lineSubtotal = moneyFromMinor(variant.price_minor) * quantity;
+        subtotal += lineSubtotal;
+        const productId = String(variant.product_id);
+        productSubtotals.set(productId, (productSubtotals.get(productId) ?? 0) + lineSubtotal);
+      }
+      const calculation = await calculateCheckoutQuote(db, productSubtotals, subtotal, input.couponCode);
+      return {
+        subtotal: calculation.subtotal,
+        shipping: calculation.shipping,
+        discount: calculation.discount,
+        total: calculation.total,
+        ...(calculation.couponCode ? { couponCode: calculation.couponCode } : {}),
+      };
+    },
+
     async createOrder(input: { userId: string; addressId: string; lines: Array<{ variantId: string; quantity: number }>; idempotencyKey: string; paymentMethod: PaymentMethod; couponCode?: string }): Promise<CommerceOrder> {
       if (!input.idempotencyKey || input.idempotencyKey.length > 100) throw new CommerceValidationError("Invalid checkout attempt.");
       if (!input.lines.length || input.lines.length > 50) throw new CommerceValidationError("Cart is empty or too large.");
@@ -728,42 +815,7 @@ export function createCommerceStore(url = databaseUrl(), authToken = process.env
           productSubtotals.set(productId, (productSubtotals.get(productId) ?? 0) + linePrice * quantity);
         }
         const subtotal = lines.reduce((sum, line) => sum + line.price * line.quantity, 0);
-        let shipping = subtotal >= 10_000 ? 0 : 199;
-        let discount = 0;
-        let discountId: string | undefined;
-        let couponCode: string | undefined;
-        const requestedCoupon = input.couponCode?.trim().toUpperCase();
-        if (requestedCoupon) {
-          const discountResult = await tx.execute({ sql: "SELECT * FROM commerce_discounts WHERE code = ? AND active = 1 LIMIT 1", args: [requestedCoupon] });
-          const coupon = discountResult.rows[0];
-          if (!coupon) throw new DiscountCodeError("Coupon code is invalid or inactive.");
-          if (coupon.usage_limit != null && Number(coupon.used_count) >= Number(coupon.usage_limit)) throw new DiscountCodeError("This coupon has reached its usage limit.");
-          if (subtotal < moneyFromMinor(coupon.minimum_order_minor)) throw new DiscountCodeError(`Minimum order value is ₹${moneyFromMinor(coupon.minimum_order_minor).toLocaleString("en-IN")} for this coupon.`);
-          const scope = String(coupon.scope) as DiscountScope;
-          let eligibleProductIds = [...productSubtotals.keys()];
-          if (scope === "products") {
-            const scoped = await tx.execute({ sql: "SELECT product_id FROM commerce_discount_products WHERE discount_id = ?", args: [String(coupon.id)] });
-            const allowed = new Set(scoped.rows.map((row) => String(row.product_id)));
-            eligibleProductIds = eligibleProductIds.filter((id) => allowed.has(id));
-          } else if (scope === "collections") {
-            const scoped = await tx.execute({
-              sql: `SELECT DISTINCT cp.product_id FROM commerce_discount_collections dc
-                    JOIN commerce_collection_products cp ON cp.collection_id = dc.collection_id
-                    WHERE dc.discount_id = ?`, args: [String(coupon.id)],
-            });
-            const allowed = new Set(scoped.rows.map((row) => String(row.product_id)));
-            eligibleProductIds = eligibleProductIds.filter((id) => allowed.has(id));
-          }
-          const eligibleSubtotal = eligibleProductIds.reduce((sum, id) => sum + (productSubtotals.get(id) ?? 0), 0);
-          if (eligibleSubtotal <= 0) throw new DiscountCodeError("This coupon does not apply to the products in your bag.");
-          const type = String(coupon.type) as DiscountType;
-          if (type === "percentage") discount = Math.round(eligibleSubtotal * Number(coupon.value)) / 100;
-          if (type === "fixed_amount") discount = Math.min(eligibleSubtotal, moneyFromMinor(coupon.value));
-          if (type === "free_shipping") shipping = 0;
-          discountId = String(coupon.id);
-          couponCode = String(coupon.code);
-        }
-        const total = Math.max(0, subtotal - discount + shipping);
+        const { shipping, discount, discountId, couponCode, total } = await calculateCheckoutQuote(tx, productSubtotals, subtotal, input.couponCode);
         const id = randomUUID();
         const createdAt = new Date().toISOString();
         const number = `PE-${createdAt.slice(2, 10).replaceAll("-", "")}-${id.slice(0, 6).toUpperCase()}`;
