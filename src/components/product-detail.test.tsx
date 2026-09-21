@@ -40,7 +40,7 @@ describe("ProductDetail", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Added 1 × Neelambari Silk Saree in Indigo, Free Size");
   });
 
-  it("hides Shopify's synthetic Default colour and still adds the sole variant", async () => {
+  it("hides a synthetic Default colour and still adds the sole variant", async () => {
     const user = userEvent.setup();
     const product = {
       ...products[0],
@@ -48,9 +48,9 @@ describe("ProductDetail", () => {
       name: "Saree",
       colors: ["Default"],
       sizes: ["One Size"],
-      source: "shopify" as const,
+      source: "commerce" as const,
       variants: [{
-        id: "gid://shopify/ProductVariant/1",
+        id: "kurta:emerald:s",
         title: "Default Title",
         availableForSale: true,
         price: 3000,
@@ -63,17 +63,17 @@ describe("ProductDetail", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Added 1 × Saree in One Size");
   });
 
-  it("uses the selected Shopify variant price on the product and in the cart", async () => {
+  it("uses the selected inventory variant price on the product and in the cart", async () => {
     const user = userEvent.setup();
     const product = {
       ...products[1],
       price: 1000,
       colors: ["Emerald"],
       sizes: ["S", "M"],
-      source: "shopify" as const,
+      source: "commerce" as const,
       variants: [
-        { id: "gid://shopify/ProductVariant/1", title: "S", color: "Emerald", size: "S", availableForSale: true, price: 1000 },
-        { id: "gid://shopify/ProductVariant/2", title: "M", color: "Emerald", size: "M", availableForSale: true, price: 1300 },
+        { id: "kurta:emerald:s", title: "S", color: "Emerald", size: "S", availableForSale: true, price: 1000 },
+        { id: "kurta:emerald:m", title: "M", color: "Emerald", size: "M", availableForSale: true, price: 1300 },
       ],
     };
     renderProduct(product);

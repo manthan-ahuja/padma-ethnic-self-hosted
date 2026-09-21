@@ -13,11 +13,13 @@ export interface ProductVariant {
   size?: string;
   availableForSale: boolean;
   price: number;
+  inventoryQuantity?: number;
+  sku?: string;
 }
 
 export interface Product {
   id: string;
-  shopifyProductId?: string;
+  productNumber?: number;
   name: string;
   category: ProductCategory;
   price: number;
@@ -44,7 +46,8 @@ export interface Product {
   modelInfo?: string;
   measurements?: string;
   variants?: ProductVariant[];
-  source?: "local" | "shopify";
+  source?: "local" | "commerce";
+  active?: boolean;
 }
 
 export interface ProductSelection {

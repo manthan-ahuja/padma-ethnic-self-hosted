@@ -25,57 +25,64 @@ export function ScrollMotion() {
   const pathname = usePathname();
 
   useEffect(() => {
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let observer: IntersectionObserver | undefined;
+    let mutationObserver: MutationObserver | undefined;
+    let secondFrame = 0;
 
-    if (reducedMotion || !("IntersectionObserver" in window)) {
-      document.querySelectorAll<HTMLElement>(REVEAL_SELECTOR).forEach(reveal);
-      return;
-    }
-
-    const registered = new WeakSet<HTMLElement>();
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
-          reveal(entry.target as HTMLElement);
-          observer.unobserve(entry.target);
-        }
-      },
-      { rootMargin: "0px 0px -7%", threshold: 0.12 },
-    );
-
-    const register = (element: HTMLElement, index = 0) => {
-      if (registered.has(element)) return;
-      registered.add(element);
-
-      const bounds = element.getBoundingClientRect();
-      if (bounds.bottom > 0 && bounds.top < window.innerHeight * 0.93) {
-        reveal(element);
+    const start = () => {
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (reducedMotion || !("IntersectionObserver" in window)) {
+        document.querySelectorAll<HTMLElement>(REVEAL_SELECTOR).forEach(reveal);
         return;
       }
 
-      element.dataset.scrollReveal = "pending";
-      element.style.setProperty("--reveal-order", String(index % 4));
-      observer.observe(element);
+      const registered = new WeakSet<HTMLElement>();
+      observer = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (!entry.isIntersecting) continue;
+            reveal(entry.target as HTMLElement);
+            observer?.unobserve(entry.target);
+          }
+        },
+        { rootMargin: "0px 0px -7%", threshold: 0.12 },
+      );
+
+      const register = (element: HTMLElement, index = 0) => {
+        if (registered.has(element)) return;
+        registered.add(element);
+        const bounds = element.getBoundingClientRect();
+        if (bounds.bottom > 0 && bounds.top < window.innerHeight * 0.93) {
+          reveal(element);
+          return;
+        }
+        element.dataset.scrollReveal = "pending";
+        element.style.setProperty("--reveal-order", String(index % 4));
+        observer?.observe(element);
+      };
+
+      const registerTree = (node: Node) => {
+        if (!(node instanceof HTMLElement)) return;
+        if (node.matches(REVEAL_SELECTOR)) register(node);
+        node.querySelectorAll<HTMLElement>(REVEAL_SELECTOR).forEach(register);
+      };
+
+      document.querySelectorAll<HTMLElement>(REVEAL_SELECTOR).forEach(register);
+      mutationObserver = new MutationObserver((mutations) => {
+        for (const mutation of mutations) mutation.addedNodes.forEach(registerTree);
+      });
+      mutationObserver.observe(document.body, { childList: true, subtree: true });
     };
 
-    const registerTree = (node: Node) => {
-      if (!(node instanceof HTMLElement)) return;
-      if (node.matches(REVEAL_SELECTOR)) register(node);
-      node.querySelectorAll<HTMLElement>(REVEAL_SELECTOR).forEach(register);
-    };
-
-    document.querySelectorAll<HTMLElement>(REVEAL_SELECTOR).forEach(register);
-    const mutationObserver = new MutationObserver((mutations) => {
-      for (const mutation of mutations) {
-        mutation.addedNodes.forEach(registerTree);
-      }
-    });
-    mutationObserver.observe(document.body, { childList: true, subtree: true });
-
+    // Defer DOM annotations until the whole streamed route has hydrated. Mutating
+    // sibling server markup in the first effect can otherwise cause React 19
+    // hydration mismatches on slower clients.
+    const firstFrame = requestAnimationFrame(() => { secondFrame = requestAnimationFrame(start); });
     return () => {
-      mutationObserver.disconnect();
-      observer.disconnect();
+      cancelAnimationFrame(firstFrame);
+      cancelAnimationFrame(secondFrame);
+      mutationObserver?.disconnect();
+      observer?.disconnect();
     };
   }, [pathname]);
 

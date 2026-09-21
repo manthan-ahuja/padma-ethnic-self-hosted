@@ -398,7 +398,7 @@ export function Storefront({ products }: { products: Product[] }) {
                     );
                   })}
                 </div>
-                <div className="cart-summary"><div><span>Subtotal</span><strong>{money.format(cart.subtotal)}</strong></div><p>Taxes included. Shipping calculated at checkout.</p><Link className="checkout-button" href="/cart">Review bag <ArrowRight size={17} /></Link><small>Inventory and totals are revalidated by Shopify at checkout.</small></div>
+                <div className="cart-summary"><div><span>Subtotal</span><strong>{money.format(cart.subtotal)}</strong></div><p>Taxes included. Shipping calculated at checkout.</p><Link className="checkout-button" href="/cart">Review bag <ArrowRight size={17} /></Link><small>Inventory and totals are revalidated by the Padma backend at checkout.</small></div>
               </>
             )}
           </aside>

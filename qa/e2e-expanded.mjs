@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import puppeteer from "puppeteer-core";
 
-const baseUrl = process.env.BASE_URL ?? "http://127.0.0.1:3100";
+const baseUrl = process.env.BASE_URL ?? "http://localhost:3001";
 const chromePath = process.env.CHROME_PATH ?? "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const outputDir = path.resolve("qa/output");
 await fs.mkdir(outputDir, { recursive: true });
@@ -127,7 +127,7 @@ async function testDesktop() {
   assert(itemCount > 0, "/cart: added product was not persisted");
   const checkout = await page.$(".checkout-button");
   assert(Boolean(checkout), "/cart: checkout button missing");
-  if (checkout) assert(!(await checkout.evaluate((button) => button.disabled)), "/cart: Shopify checkout button unexpectedly disabled");
+  if (checkout) assert((await checkout.evaluate((link) => link.getAttribute("href"))) === "/checkout", "/cart: checkout link is incorrect");
   await renderFullPage(page, "cart-desktop.png");
 
   await visit(page, "/search?q=saree");
@@ -181,28 +181,9 @@ async function testMobileAndScroll() {
   await page.close();
 }
 
-async function testCheckoutHandoff() {
-  const { page } = await createPage({ width: 1280, height: 900, deviceScaleFactor: 1 });
-  await visit(page, "/products/saree");
-  await page.click("button.product-add-button");
-  await visit(page, "/cart");
-  const disabled = await page.$eval("button.checkout-button", (button) => button.disabled);
-  assert(!disabled, "Secure checkout remained disabled after adding the live Shopify variant");
-  const responsePromise = page.waitForResponse((response) => response.url().includes("/api/shopify/cart"), { timeout: 30_000 });
-  const navigationPromise = page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 30_000 });
-  await page.click("button.checkout-button");
-  const [cartResponse] = await Promise.all([responsePromise, navigationPromise]);
-  assert(cartResponse.ok(), `Checkout API returned HTTP ${cartResponse.status()}`);
-  const destination = new URL(page.url());
-  assert(destination.protocol === "https:" && destination.hostname.includes("shopify"), `Checkout did not hand off to Shopify: ${page.url()}`);
-  observations.push({ route: "/cart → Shopify checkout", status: cartResponse.status(), destination: destination.hostname });
-  await page.close();
-}
-
 try {
   await testDesktop();
   await testMobileAndScroll();
-  await testCheckoutHandoff();
 } finally {
   await browser.close();
 }

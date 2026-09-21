@@ -51,15 +51,22 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, account }) {
       if (user?.id && (account?.provider === "credentials" || account?.provider === "google")) {
         token.customerId = user.id;
+        token.authProvider = account.provider;
       }
       if (!token.customerId && token.email) {
         const existingGoogleUser = await customerStore.findGoogleUserByEmail(token.email);
-        if (existingGoogleUser) token.customerId = existingGoogleUser.id;
+        if (existingGoogleUser) {
+          token.customerId = existingGoogleUser.id;
+          token.authProvider = "google";
+        }
       }
       return token;
     },
     async session({ session, token }) {
-      if (session.user && token.customerId) session.user.id = String(token.customerId);
+      if (session.user && token.customerId) {
+        session.user.id = String(token.customerId);
+        session.user.authProvider = token.authProvider;
+      }
       return session;
     },
   },

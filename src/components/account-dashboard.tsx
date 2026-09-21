@@ -89,7 +89,7 @@ export function AccountDashboard({ user, cartCount, orders, addresses, ordersUna
             {ordersUnavailable ? (
               <div className="account-empty"><h3>Order history unavailable</h3><p>We could not load your order history. Please retry from the message above.</p></div>
             ) : orders.length === 0 ? (
-              <div className="account-empty"><h3>No orders yet</h3><p>Order history will appear here when payment syncing is connected.</p><Link href="/">Explore the collection</Link></div>
+              <div className="account-empty"><h3>No orders yet</h3><p>Your self-hosted checkout orders will appear here.</p><Link href="/">Explore the collection</Link></div>
             ) : orders.map((order) => (
               <article className="account-order" key={order.id}>
                 <div><span>Order {order.number}</span><strong>{money.format(order.total)}</strong></div>

@@ -55,7 +55,7 @@ export function ProductDetail({ product }: { product: Product }) {
       setConfirmation("");
       return;
     }
-    if (product.source === "shopify" && (!selectedVariant || !selectedVariant.availableForSale)) {
+    if (product.variants?.length && (!selectedVariant || !selectedVariant.availableForSale)) {
       setSelectionError("This size and colour combination is currently unavailable.");
       setConfirmation("");
       return;
@@ -119,7 +119,7 @@ export function ProductDetail({ product }: { product: Product }) {
         <div className="product-purchase-row"><div className="detail-quantity" aria-label="Quantity selector"><button type="button" onClick={() => setQuantity((value) => Math.max(1, value - 1))} aria-label="Decrease quantity"><Minus size={15} /></button><span aria-live="polite">{quantity}</span><button type="button" onClick={() => setQuantity((value) => Math.min(5, value + 1))} aria-label="Increase quantity"><Plus size={15} /></button></div><button type="button" className="product-add-button" onClick={addConfiguredProduct}>Add to bag</button><button type="button" className={`product-wishlist-button ${liked ? "is-liked" : ""}`} onClick={() => toggleWishlist(product.id)} aria-label={`${liked ? "Remove" : "Add"} ${product.name} ${liked ? "from" : "to"} wishlist`} aria-pressed={liked}><Heart size={20} fill={liked ? "currentColor" : "none"} /></button></div>
 
         <div className="delivery-checker"><label htmlFor="delivery-pincode">Delivery pincode</label><div><input id="delivery-pincode" inputMode="numeric" maxLength={6} value={pincode} onChange={(event) => { setPincode(event.target.value.replace(/\D/g, "")); setDeliveryError(""); setDeliveryMessage(""); }} placeholder="6-digit pincode" /><button type="button" onClick={checkDelivery}>Check delivery</button></div>{deliveryError && <p role="alert">{deliveryError}</p>}{deliveryMessage && <p role="status"><Check size={14} /> {deliveryMessage}</p>}</div>
-        <div className="purchase-assurances"><span><Truck size={18} /><strong>Complimentary delivery</strong> across India</span><span><RotateCcw size={18} /><strong>Easy 7-day returns</strong> on eligible pieces</span><span><ShieldCheck size={18} /><strong>Secure checkout</strong> powered by Shopify</span></div>
+        <div className="purchase-assurances"><span><Truck size={18} /><strong>Complimentary delivery</strong> across India</span><span><RotateCcw size={18} /><strong>Easy 7-day returns</strong> on eligible pieces</span><span><ShieldCheck size={18} /><strong>Secure checkout</strong> powered by Padma</span></div>
         <div className="product-information">{product.features.length > 0 && <details open><summary>Features <Plus size={16} /></summary><ul>{product.features.map((feature) => <li key={feature}>{feature}</li>)}</ul></details>}<details><summary>Fit &amp; measurements <Plus size={16} /></summary><p>{product.measurements ?? "Detailed garment measurements will be published alongside the final production size chart."}</p></details><details><summary>Material &amp; care <Plus size={16} /></summary><p>{product.care}</p></details><details><summary>What&apos;s included <Plus size={16} /></summary><p>{product.included}</p></details><details><summary>Craft &amp; product details <Plus size={16} /></summary><p>{product.origin}</p><p>Product code: {product.sku}</p></details></div>
       </section>
     </main>

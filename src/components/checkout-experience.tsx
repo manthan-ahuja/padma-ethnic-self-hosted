@@ -1,0 +1,89 @@
+"use client";
+
+import Link from "next/link";
+import { CheckCircle2, ShieldCheck } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useEffect, useMemo, useState } from "react";
+import type { CustomerAddress } from "@/lib/customer-store";
+import type { CommerceOrder } from "@/lib/commerce-store";
+import { useCommerce } from "./commerce-provider";
+
+const money = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
+
+export function CheckoutExperience() {
+  const { data: session, status } = useSession();
+  if (status === "loading") return <main className="checkout-page"><p>Preparing secure checkout…</p></main>;
+  if (!session?.user?.id) return <main className="checkout-page"><p className="eyebrow">Checkout</p><h1>Sign in to continue</h1><p>Your account keeps your delivery addresses and order history private.</p><Link className="primary-cta" href="/account">Log in or sign up</Link></main>;
+  return <AuthenticatedCheckout key={session.user.id} />;
+}
+
+function AuthenticatedCheckout() {
+  const { cart, removeFromCart } = useCommerce();
+  const [addresses, setAddresses] = useState<CustomerAddress[]>([]);
+  const [addressId, setAddressId] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+  const [order, setOrder] = useState<CommerceOrder | null>(null);
+  const [couponCode, setCouponCode] = useState("");
+  const [attemptKey] = useState(() => crypto.randomUUID());
+  const lines = useMemo(() => cart.items.flatMap((item) => item.selection?.variantId
+    ? [{ variantId: item.selection.variantId, quantity: item.quantity }]
+    : []), [cart.items]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/account/addresses", { signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Unable to load saved addresses.");
+        return response.json() as Promise<{ addresses: CustomerAddress[] }>;
+      })
+      .then(({ addresses: next }) => {
+        setAddresses(next);
+        setAddressId(next.find((address) => address.isDefault)?.id ?? next[0]?.id ?? "");
+      })
+      .catch((reason) => { if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : "Unable to load saved addresses."); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, []);
+
+  const placeOrder = async () => {
+    if (!addressId || !lines.length) return;
+    setPending(true);
+    setError("");
+    try {
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ addressId, idempotencyKey: attemptKey, paymentMethod: "cod", lines, couponCode }),
+      });
+      const result = await response.json() as { order?: CommerceOrder; error?: string };
+      if (!response.ok || !result.order) throw new Error(result.error || "Order could not be placed.");
+      setOrder(result.order);
+      for (const item of cart.items) removeFromCart(item.lineId ?? item.product.id);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Order could not be placed.");
+    } finally {
+      setPending(false);
+    }
+  };
+
+  if (loading) return <main className="checkout-page"><p>Preparing secure checkout…</p></main>;
+  if (order) return <main className="checkout-page checkout-success"><CheckCircle2 size={44} /><p className="eyebrow">Order placed</p><h1>Thank you</h1><p>Your order <strong>{order.number}</strong> has been reserved. Pay {money.format(order.total)} by cash on delivery.</p><Link className="primary-cta" href="/account">View my orders</Link></main>;
+  if (!cart.items.length) return <main className="checkout-page"><p className="eyebrow">Checkout</p><h1>Your bag is empty</h1><Link className="primary-cta" href="/collections/all">Explore the collection</Link></main>;
+  if (lines.length !== cart.items.length) return <main className="checkout-page"><h1>Refresh your bag</h1><p>One or more saved items no longer has a valid local inventory variant. Remove it and add it again.</p><Link className="primary-cta" href="/cart">Return to bag</Link></main>;
+
+  const shipping = cart.subtotal >= 10_000 ? 0 : 199;
+  return <main className="checkout-page">
+    <header><p className="eyebrow">Secure self-hosted checkout</p><h1>Delivery &amp; payment</h1></header>
+    <div className="checkout-grid">
+      <section>
+        <h2>Delivery address</h2>
+        {addresses.length ? <div className="checkout-addresses">{addresses.map((address) => <label key={address.id} className={addressId === address.id ? "is-selected" : ""}><input type="radio" name="address" checked={addressId === address.id} onChange={() => setAddressId(address.id)} /><strong>{address.label}</strong><span>{address.fullName}</span><span>{address.address1}{address.address2 ? `, ${address.address2}` : ""}</span><span>{address.city}, {address.state} {address.postalCode}</span><span>{address.phone}</span></label>)}</div> : <div className="checkout-no-address"><p>Add a delivery address before placing your order.</p><Link href="/account">Add an address in My Account</Link></div>}
+        <h2>Payment</h2>
+        <label className="checkout-payment is-selected"><input type="radio" checked readOnly /><span><strong>Cash on delivery</strong><small>Pay when your order arrives.</small></span></label>
+      </section>
+      <aside className="order-summary"><h2>Order summary</h2>{cart.items.map((item) => <div key={item.lineId ?? item.product.id}><span>{item.product.name} × {item.quantity}</span><strong>{money.format(item.product.price * item.quantity)}</strong></div>)}<div><span>Subtotal</span><strong>{money.format(cart.subtotal)}</strong></div><div><span>Delivery</span><strong>{shipping ? money.format(shipping) : "Complimentary"}</strong></div><label className="checkout-coupon"><span>Coupon code</span><input value={couponCode} onChange={(event) => setCouponCode(event.target.value.toUpperCase())} placeholder="WELCOME10" maxLength={40} /></label><p className="checkout-coupon-note">The final discount and total are validated by the server when you place the order.</p><div className="checkout-total"><span>Estimated total</span><strong>{money.format(cart.subtotal + shipping)}</strong></div><button className="checkout-button" type="button" disabled={!addressId || pending} onClick={placeOrder}>{pending ? "Placing order…" : "Place COD order"}</button>{error && <p className="selection-message is-error" role="alert">{error}</p>}<p className="integration-note"><ShieldCheck size={16} /> Prices, coupons, and stock are revalidated by the Padma backend before the order is created.</p></aside>
+    </div>
+  </main>;
+}

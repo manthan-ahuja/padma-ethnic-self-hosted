@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import puppeteer from "puppeteer-core";
 
-const baseUrl = process.env.BASE_URL ?? "http://127.0.0.1:3100";
+const baseUrl = process.env.BASE_URL ?? "http://localhost:3001";
 const executablePath = [
   process.env.CHROME_PATH,
   "C:/Program Files/Google/Chrome/Application/chrome.exe",

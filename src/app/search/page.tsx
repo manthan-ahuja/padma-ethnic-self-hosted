@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { SearchExperience } from "@/components/search-experience";
 import { PageShell } from "@/components/site-chrome";
-import { getProducts } from "@/lib/shopify/repository";
+import { getProducts } from "@/lib/commerce/repository";
 
 export const metadata: Metadata = { title: "Search | Padma Ethnic", description: "Search Padma's sarees, kurta sets, lehengas and contemporary Indian separates." };
 

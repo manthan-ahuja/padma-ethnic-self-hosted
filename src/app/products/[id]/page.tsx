@@ -6,7 +6,7 @@ import { notFound } from "next/navigation";
 import { ProductDetail } from "@/components/product-detail";
 import { SiteFooter, SiteHeader } from "@/components/site-chrome";
 import { RecentlyViewed } from "@/components/recently-viewed";
-import { getProductByHandle, getProducts } from "@/lib/shopify/repository";
+import { getProductByHandle, getProducts } from "@/lib/commerce/repository";
 
 export async function generateStaticParams() {
   const products = await getProducts();

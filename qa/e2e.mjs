@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import puppeteer from "puppeteer-core";
 
-const baseUrl = process.env.BASE_URL ?? "http://127.0.0.1:3000";
+const baseUrl = process.env.BASE_URL ?? "http://localhost:3001";
 const chromeCandidates = [
   process.env.CHROME_PATH,
   "C:/Program Files/Google/Chrome/Application/chrome.exe",
@@ -63,11 +63,7 @@ await page.$eval(".hero-image", (image) => image.decode());
 await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 await page.screenshot({ path: "qa/desktop-brand.png", fullPage: false });
 
-await page.click('button[aria-label="Add Neelambari Silk Saree to bag"]');
-await page.waitForSelector('[role="dialog"][aria-label="Your shopping bag"]');
-const cartText = await page.$eval(".cart-summary", (node) => node.textContent);
-
-await page.click('button[aria-label="Close shopping bag"]');
+let cartText = "";
 await page.click("#collection .filter-row button:nth-child(2)");
 const names = await page.$$eval(".product-copy h3", (nodes) =>
   nodes.map((node) => node.textContent),
@@ -97,21 +93,17 @@ const productContent = await page.evaluate(() => ({
   delivery: document.querySelector(".product-facts")?.textContent?.includes("4–7 business days"),
   desktopOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
 }));
-await page.click('button[aria-label="View product image 2"]');
-const galleryChanged = await page.$eval(
-  ".product-gallery-image",
-  (image) => image.alt.endsWith("view 2"),
-);
-await page.click(".product-add-button");
-await page.waitForSelector('[role="alert"]');
-await page.click('input[value="Free Size"]');
+await page.click(".product-gallery-main");
+await page.waitForSelector('[role="dialog"][aria-label$="full-screen gallery"]');
+const galleryOpened = Boolean(await page.$('[role="dialog"][aria-label$="full-screen gallery"]'));
+await page.click('button[aria-label="Close full-screen gallery"]');
 await page.click('button[aria-label="Increase quantity"]');
 await page.click(".product-add-button");
 await page.waitForSelector('[role="status"]');
-const selectionConfirmed = await page.$eval(
-  '[role="status"]',
-  (node) => node.textContent?.includes("Added 2 × Neelambari Silk Saree"),
-);
+const selectionConfirmed = await page.$eval('[role="status"]', (node) => node.textContent?.includes("Added 2 × Neelambari Silk Saree"));
+await page.goto(`${baseUrl}/cart`, { waitUntil: "networkidle0", timeout: 60_000 });
+await page.waitForSelector(".order-summary");
+cartText = await page.$eval(".order-summary", (node) => node.textContent ?? "");
 
 await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
 await page.goto(productUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
@@ -132,7 +124,7 @@ const result = {
   footerLogoLoaded,
   productDetail: {
     ...productContent,
-    galleryChanged,
+    galleryOpened,
     selectionConfirmed,
     mobileOverflow: productMobileOverflow,
   },
@@ -151,7 +143,7 @@ if (
   !productContent.material ||
   !productContent.delivery ||
   productContent.desktopOverflow ||
-  !galleryChanged ||
+  !galleryOpened ||
   !selectionConfirmed ||
   productMobileOverflow ||
   names.some((name) => !name?.includes("Saree")) ||
