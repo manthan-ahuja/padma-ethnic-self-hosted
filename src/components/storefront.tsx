@@ -12,6 +12,7 @@ import {
   Search,
   ShoppingBag,
   Sparkles,
+  UserRound,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -182,6 +183,9 @@ export function Storefront({ products }: { products: Product[] }) {
         </nav>
         <BrandMark />
         <div className="header-actions">
+          <Link className="icon-button" href="/account" aria-label="Account">
+            <UserRound size={20} />
+          </Link>
           <Link className="icon-button search-button" href="/search" aria-label="Search">
             <Search size={20} />
           </Link>

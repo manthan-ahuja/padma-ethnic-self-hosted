@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Manrope } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/components/auth-provider";
 import { CommerceProvider } from "@/components/commerce-provider";
 import { ScrollMotion } from "@/components/scroll-motion";
 
@@ -35,10 +36,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en-IN" className={`${cormorant.variable} ${manrope.variable}`}>
       <body>
-        <CommerceProvider>
-          <ScrollMotion />
-          {children}
-        </CommerceProvider>
+        <AuthProvider>
+          <CommerceProvider accountSync>
+            <ScrollMotion />
+            {children}
+          </CommerceProvider>
+        </AuthProvider>
       </body>
     </html>
   );

@@ -27,6 +27,11 @@ describe("Storefront", () => {
     expect(screen.getByRole("link", { name: "View Neelambari Silk Saree" })).toHaveAttribute("href", "/products/neelambari-silk-saree");
   });
 
+  it("offers account access from the storefront header", () => {
+    renderStorefront();
+    expect(screen.getByRole("link", { name: "Account" })).toHaveAttribute("href", "/account");
+  });
+
   it("closes the homepage menu with Escape and restores page scrolling", async () => {
     const user = userEvent.setup();
     renderStorefront();

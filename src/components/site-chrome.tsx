@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, Menu, Search, ShoppingBag, X } from "lucide-react";
+import { Heart, Menu, Search, ShoppingBag, UserRound, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useCommerce } from "./commerce-provider";
 
@@ -46,6 +46,7 @@ export function SiteHeader() {
         <span>PADMA</span><small>ETHNIC WEAR</small>
       </Link>
       <div className="global-actions">
+        <Link href="/account" aria-label="Account"><UserRound size={19} /></Link>
         <Link href="/search" aria-label="Search"><Search size={19} /></Link>
         <Link href="/wishlist" aria-label={`Wishlist with ${wishlist.length} items`}><Heart size={19} /><b>{wishlist.length}</b></Link>
         <Link href="/cart" aria-label={`Shopping bag with ${cart.itemCount} items`}><ShoppingBag size={19} /><b>{cart.itemCount}</b></Link>
