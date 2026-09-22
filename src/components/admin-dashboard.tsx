@@ -204,6 +204,30 @@ function CollectionManager({ products, collections, pending, run }: { products: 
   </section>;
 }
 
+const money = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
+
 function OrderManager({ orders, pending, run }: { orders: CommerceOrder[]; pending: string; run: (key: string, action: () => Promise<void>) => Promise<void> }) {
-  return <section className="admin-section"><div className="admin-section-heading"><h2>Orders</h2><span>{orders.length} orders</span></div>{orders.length ? <div className="admin-list">{orders.map((order) => <article className="admin-order" key={order.id}><div><strong>{order.number}</strong><span>{new Date(order.createdAt).toLocaleString("en-IN")} · ₹{order.total.toLocaleString("en-IN")} · {order.paymentMethod.toUpperCase()}</span>{order.couponCode && <small>Coupon {order.couponCode} · saved ₹{order.discount.toLocaleString("en-IN")}</small>}<small>{order.items.map((item) => `${item.name} (${item.color ?? "Default"} / ${item.size ?? "Free Size"}) × ${item.quantity}`).join(", ")}</small></div><select value={order.status} onChange={(event) => void run(`order-${order.id}`, () => mutate(`/api/admin/orders/${order.id}`, "PATCH", { status: event.target.value }))} disabled={pending === `order-${order.id}`}><option value="pending">Pending</option><option value="paid">Paid</option><option value="fulfilled">Fulfilled</option><option value="cancelled">Cancelled</option><option value="failed">Failed</option></select></article>)}</div> : <p>No orders yet.</p>}</section>;
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  return <section className="admin-section admin-orders-section">
+    <div className="admin-section-heading"><div><h2>Orders</h2><p className="admin-section-intro">Open an order to see the customer, delivery address, purchased items, payment, and full total breakdown.</p></div><span>{orders.length} {orders.length === 1 ? "order" : "orders"}</span></div>
+    {orders.length ? <div className="admin-order-list">{orders.map((order) => {
+      const expanded = expandedOrder === order.id;
+      const address = order.deliveryAddress;
+      return <article className={`admin-order-card ${expanded ? "is-expanded" : ""}`} key={order.id}>
+        <div className="admin-order-summary">
+          <div><span className={`admin-order-status is-${order.status}`}>{order.status}</span><strong>{order.number}</strong><small>{new Date(order.createdAt).toLocaleString("en-IN")} · {order.customer.name}</small></div>
+          <div className="admin-order-summary-total"><span>Order total</span><strong>{money.format(order.total)}</strong></div>
+          <label className="admin-order-status-control">Status<select aria-label={`Status for ${order.number}`} value={order.status} onChange={(event) => void run(`order-${order.id}`, () => mutate(`/api/admin/orders/${order.id}`, "PATCH", { status: event.target.value }))} disabled={pending === `order-${order.id}`}><option value="pending">Pending</option><option value="paid">Paid</option><option value="fulfilled">Fulfilled</option><option value="cancelled">Cancelled</option><option value="failed">Failed</option></select></label>
+          <button className="admin-order-toggle" type="button" aria-expanded={expanded} onClick={() => setExpandedOrder(expanded ? null : order.id)}>{expanded ? "Hide order details" : "View order details"}</button>
+        </div>
+        {expanded && <div className="admin-order-details">
+          <section><h3>Customer</h3><strong>{order.customer.name}</strong><a href={`mailto:${order.customer.email}`}>{order.customer.email}</a><a href={`tel:${address.phone}`}>{address.phone}</a></section>
+          <section><h3>Delivery address</h3><strong>{address.label}</strong><span>{address.fullName}</span><p>{address.address1}{address.address2 ? `, ${address.address2}` : ""}<br />{address.city}, {address.state} {address.postalCode}<br />{address.country}</p></section>
+          <section><h3>Payment</h3><strong>{order.paymentMethod === "cod" ? "Cash on delivery" : "Cashfree"}</strong><span>Currency: {order.currency}</span>{order.couponCode ? <span>Coupon: <strong>{order.couponCode}</strong></span> : <span>No coupon applied</span>}</section>
+          <section className="admin-order-items"><h3>Items ({order.items.reduce((sum, item) => sum + item.quantity, 0)})</h3>{order.items.map((item) => <article key={`${order.id}-${item.variantId}`}><div><strong>{item.name}</strong><span>SKU <b>{item.sku}</b></span><small>{item.color ?? "Default"} / {item.size ?? "Free Size"}</small></div><div><span>{money.format(item.price)} × {item.quantity}</span><strong>{money.format(item.price * item.quantity)}</strong></div></article>)}</section>
+          <section className="admin-order-totals"><h3>Amount summary</h3><div><span>Subtotal</span><strong>{money.format(order.subtotal)}</strong></div><div><span>Delivery</span><strong>{order.shipping ? money.format(order.shipping) : "Complimentary"}</strong></div>{order.discount > 0 && <div className="is-discount"><span>Discount</span><strong>−{money.format(order.discount)}</strong></div>}<div className="is-total"><span>Total</span><strong>{money.format(order.total)}</strong></div></section>
+        </div>}
+      </article>;
+    })}</div> : <div className="admin-empty-orders"><h3>No orders yet</h3><p>Customer orders will appear here after checkout.</p></div>}
+  </section>;
 }

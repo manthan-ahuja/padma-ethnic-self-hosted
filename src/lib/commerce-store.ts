@@ -37,6 +37,11 @@ export type CommerceOrder = {
   currency: "INR";
   paymentMethod: PaymentMethod;
   createdAt: string;
+  customer: { name: string; email: string };
+  deliveryAddress: {
+    label: string; fullName: string; phone: string; address1: string; address2: string;
+    city: string; state: string; postalCode: string; country: string;
+  };
   items: Array<{ variantId: string; name: string; sku: string; color?: string; size?: string; price: number; quantity: number }>;
 };
 
@@ -442,19 +447,28 @@ export function createCommerceStore(url = databaseUrl(), authToken = process.env
     const db = executor ?? await getClient();
     const [orderResult, itemResult] = await Promise.all([
       db.execute({
-        sql: `SELECT o.*, d.subtotal_minor, d.shipping_minor, d.discount_code, d.discount_minor, d.payment_method
-              FROM orders o JOIN commerce_order_details d ON d.order_id = o.id WHERE o.id = ? LIMIT 1`, args: [id],
+        sql: `SELECT o.*, d.address_json, d.subtotal_minor, d.shipping_minor, d.discount_code, d.discount_minor,
+                     d.payment_method, u.name AS customer_name, u.email AS customer_email
+              FROM orders o JOIN commerce_order_details d ON d.order_id = o.id
+              JOIN users u ON u.id = d.user_id WHERE o.id = ? LIMIT 1`, args: [id],
       }),
       db.execute({ sql: "SELECT * FROM commerce_order_items WHERE order_id = ? ORDER BY rowid", args: [id] }),
     ]);
     const row = orderResult.rows[0];
     if (!row) return null;
+    const address = JSON.parse(String(row.address_json)) as Record<string, unknown>;
     return {
       id: String(row.id), number: String(row.number), userId: String(row.user_id), status: String(row.status) as OrderStatus,
       subtotal: moneyFromMinor(row.subtotal_minor), shipping: moneyFromMinor(row.shipping_minor),
       discount: moneyFromMinor(row.discount_minor), couponCode: row.discount_code ? String(row.discount_code) : undefined,
       total: Number(row.total),
       currency: "INR", paymentMethod: String(row.payment_method) as PaymentMethod, createdAt: String(row.created_at),
+      customer: { name: String(row.customer_name), email: String(row.customer_email) },
+      deliveryAddress: {
+        label: String(address.label), fullName: String(address.full_name), phone: String(address.phone),
+        address1: String(address.address1), address2: String(address.address2 ?? ""), city: String(address.city),
+        state: String(address.state), postalCode: String(address.postal_code), country: String(address.country),
+      },
       items: itemResult.rows.map((item) => ({
         variantId: String(item.variant_id), name: String(item.product_name), sku: String(item.sku),
         color: item.color ? String(item.color) : undefined, size: item.size ? String(item.size) : undefined,

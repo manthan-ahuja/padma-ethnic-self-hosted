@@ -75,7 +75,11 @@ describe("self-hosted commerce store", () => {
 
     const expectedSubtotal = product.price * 2;
     const expectedTotal = expectedSubtotal + (expectedSubtotal >= 10_000 ? 0 : 199);
-    expect(first).toMatchObject({ id: repeated.id, status: "pending", subtotal: expectedSubtotal, total: expectedTotal, paymentMethod: "cod" });
+    expect(first).toMatchObject({
+      id: repeated.id, status: "pending", subtotal: expectedSubtotal, total: expectedTotal, paymentMethod: "cod",
+      customer: { name: "Padma Buyer", email: "buyer@example.com" },
+      deliveryAddress: { label: "Home", fullName: "Padma Buyer", phone: "9820081628", address1: "1 Heritage Lane", city: "Mumbai", state: "Maharashtra", postalCode: "400001", country: "India" },
+    });
     expect((await commerce.getProduct(product.id))?.variants?.[0].inventoryQuantity).toBe(8);
     await expect(customers.listOrders(customer.id)).resolves.toMatchObject([{ id: first.id, total: expectedTotal }]);
   });
