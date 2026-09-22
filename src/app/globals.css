@@ -1,6 +1,16 @@
 @import "tailwindcss";
 @import "./expanded.css";
 
+/* Keep Padma's editorial typefaces while rendering digits with sturdy,
+   lining glyphs that stay legible at small price and dashboard sizes. */
+@font-face {
+  font-family: "Padma Numerals";
+  src: local("Arial"), local("Helvetica Neue"), local("Helvetica"), local("Roboto");
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0030-0039;
+}
+
 :root {
   --ink: #3d291d;
   --muted: #6f5d4e;
@@ -12,13 +22,13 @@
   --gold: #b68a4d;
   --teal: #4f817b;
   --line: rgba(61, 41, 29, 0.16);
-  --serif: var(--font-cormorant), Georgia, serif;
-  --sans: var(--font-manrope), Arial, sans-serif;
+  --serif: "Padma Numerals", var(--font-cormorant), Georgia, serif;
+  --sans: "Padma Numerals", var(--font-manrope), Arial, sans-serif;
 }
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; scroll-padding-top: 92px; }
-body { margin: 0; overflow-x: clip; background: var(--paper); color: var(--ink); font-family: var(--sans); text-rendering: optimizeLegibility; }
+body { margin: 0; overflow-x: clip; background: var(--paper); color: var(--ink); font-family: var(--sans); font-variant-numeric: lining-nums tabular-nums; text-rendering: optimizeLegibility; }
 button, input { font: inherit; }
 a { color: inherit; text-decoration: none; }
 button, a { -webkit-tap-highlight-color: transparent; }
@@ -496,9 +506,9 @@ em { font-weight: 400; }
 
 .checkout-page, .admin-page { width: min(1180px, calc(100% - 40px)); margin: 0 auto; padding: 80px 0 110px; }
 .checkout-page > header, .admin-page > header { margin-bottom: 44px; }
-.checkout-page h1, .admin-page h1 { font-family: var(--font-cormorant), serif; font-size: clamp(48px, 7vw, 82px); font-weight: 500; line-height: .95; }
+.checkout-page h1, .admin-page h1 { font-family: var(--serif); font-size: clamp(48px, 7vw, 82px); font-weight: 500; line-height: .95; }
 .checkout-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(320px, .65fr); gap: 48px; align-items: start; }
-.checkout-grid h2, .admin-section h2 { font-family: var(--font-cormorant), serif; font-size: 34px; font-weight: 500; margin: 0 0 20px; }
+.checkout-grid h2, .admin-section h2 { font-family: var(--serif); font-size: 34px; font-weight: 500; margin: 0 0 20px; }
 .checkout-section-heading { margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 18px; }
 .checkout-section-heading h2 { margin: 0; }
 .checkout-section-heading button, .checkout-no-address button { min-height: 40px; border: 1px solid var(--ink); padding: 0 15px; background: transparent; color: var(--ink); cursor: pointer; font-size: 8px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
