@@ -343,6 +343,7 @@ em { font-weight: 400; }
 .account-card .account-email { margin-bottom: 32px; }
 .account-secondary-action { background: transparent; }
 .account-loading { min-height: 270px; display: grid; place-items: center; color: var(--muted); font-family: var(--serif); font-size: 18px; }
+.account-auth-intro { margin: 12px 0 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
 .account-auth-tabs { margin: 28px 0 24px; display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--line); }
 .account-auth-tabs button { border: 0; border-bottom: 2px solid transparent; padding: 12px; background: transparent; color: var(--muted); cursor: pointer; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
 .account-auth-tabs button[aria-pressed="true"] { border-color: var(--wine); color: var(--wine); }

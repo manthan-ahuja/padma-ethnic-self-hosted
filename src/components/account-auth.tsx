@@ -50,6 +50,7 @@ export function AccountAuth({ googleConfigured, onGoogle, onCredentials }: Accou
     <section className="account-card account-auth-card">
       <p className="eyebrow">Your Padma account</p>
       <h1>{mode === "login" ? "Welcome back." : "Begin your Padma story."}</h1>
+      <p className="account-auth-intro">{mode === "login" ? "Already registered? Enter your account details below." : "New to Padma? Create your account first, then log in."}</p>
       <div className="account-auth-tabs" aria-label="Account access">
         <button type="button" aria-pressed={mode === "login"} onClick={() => selectMode("login")}>Log in</button>
         <button type="button" aria-pressed={mode === "signup"} onClick={() => selectMode("signup")}>Sign up</button>
