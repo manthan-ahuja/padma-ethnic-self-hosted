@@ -262,6 +262,7 @@ export function createCommerceStore(url = databaseUrl(), authToken = process.env
     if (!ready) ready = (async () => {
       await prepareFileDatabase(url);
       client = createClient({ url, ...(authToken ? { authToken } : {}) });
+      if (url.startsWith("file:")) await client.execute("PRAGMA busy_timeout = 10000");
       await client.batch([
         `PRAGMA foreign_keys = ON`,
         `CREATE TABLE IF NOT EXISTS users (

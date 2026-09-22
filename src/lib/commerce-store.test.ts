@@ -27,6 +27,16 @@ afterEach(async () => {
 });
 
 describe("self-hosted commerce store", () => {
+  it("initializes one local commerce database safely across concurrent clients", async () => {
+    const url = databaseUrl();
+    const concurrentStores = Array.from({ length: 8 }, () => createCommerceStore(url));
+    stores.push(...concurrentStores);
+
+    const catalogs = await Promise.all(concurrentStores.map((store) => store.listProducts()));
+
+    expect(catalogs.every((products) => products.length === 8)).toBe(true);
+  });
+
   it("seeds a storefront-ready catalog with local variants and inventory", async () => {
     const commerce = createCommerceStore(databaseUrl());
     stores.push(commerce);

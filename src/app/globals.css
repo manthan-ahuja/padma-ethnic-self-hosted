@@ -527,6 +527,32 @@ em { font-weight: 400; }
 .admin-variant small { display: none; }
 .admin-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
 .admin-chips span { padding: 7px 11px; border: 1px solid var(--line); font-size: 12px; }
+.admin-collections-layout { display: grid; grid-template-columns: minmax(280px, .72fr) minmax(0, 1.28fr); gap: 22px; align-items: start; }
+.admin-collection-index { position: sticky; top: 146px; }
+.admin-section-intro { margin: -6px 0 22px; color: var(--muted); font: 15px/1.5 var(--serif); }
+.admin-collection-list { display: grid; gap: 8px; }
+.admin-collection-list article { position: relative; border: 1px solid var(--line); padding: 15px; display: grid; gap: 8px; background: rgba(255,255,255,.3); }
+.admin-collection-list article > div { padding-right: 58px; display: grid; gap: 3px; }
+.admin-collection-list strong { font: 600 18px/1.1 var(--serif); }
+.admin-collection-list small { color: var(--muted); font-size: 8px; }
+.admin-collection-list p { min-height: 30px; margin: 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.admin-collection-list article > span { position: absolute; right: 12px; top: 14px; color: #285a40; font-size: 7px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.admin-collection-editor .admin-section-heading { margin-bottom: 20px; }
+.admin-collection-editor .eyebrow { margin-bottom: 7px; }
+.admin-collection-fields { grid-template-columns: 1fr 1fr; }
+.admin-collection-products { margin-top: 22px; border: 1px solid var(--line); padding: 16px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.admin-collection-products > div { grid-column: 1 / -1; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.admin-collection-products h3 { margin: 0; font: 600 20px var(--serif); }
+.admin-collection-products > div > span { color: var(--muted); font-size: 8px; letter-spacing: .08em; text-transform: uppercase; }
+.admin-collection-product { min-width: 0; min-height: 66px; border: 1px solid var(--line); padding: 8px; display: grid; grid-template-columns: 16px 40px minmax(0, 1fr); align-items: center; gap: 10px; background: rgba(255,255,255,.32); cursor: pointer; color: var(--ink); letter-spacing: 0; text-transform: none; }
+.admin-collection-product:has(input:checked) { border-color: var(--wine); background: #f0e1e3; box-shadow: inset 3px 0 var(--wine); }
+.admin-collection-product input { width: 16px; min-height: 16px; margin: 0; padding: 0; accent-color: var(--wine); }
+.admin-collection-thumb { width: 40px; aspect-ratio: 3 / 4; background: var(--paper-deep) center/cover no-repeat; }
+.admin-collection-product > span:last-child { min-width: 0; display: grid; gap: 3px; }
+.admin-collection-product strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 600 14px var(--serif); }
+.admin-collection-product small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 8px; }
+.admin-collection-actions { margin-top: 18px; display: flex; justify-content: space-between; align-items: center; gap: 18px; }
+.admin-collection-actions > span { color: var(--muted); font-size: 9px; }
 .admin-denied { min-height: 60vh; align-content: center; }
 .admin-workspace { width: min(1440px, calc(100% - 40px)); }
 .admin-hero { display: flex; align-items: end; justify-content: space-between; gap: 40px; }
@@ -610,7 +636,8 @@ em { font-weight: 400; }
 .checkout-coupon > label { font-size: 8px; letter-spacing: .12em; text-transform: uppercase; }
 .checkout-coupon-control { display: flex; }
 .checkout-coupon-control input { min-width: 0; flex: 1; margin: 0; }
-.checkout-coupon-control button { min-width: 126px; border: 1px solid var(--wine); border-left: 0; padding: 0 14px; background: var(--wine); color: white; cursor: pointer; font-size: 8px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+.checkout-coupon-control input { min-height: 40px; padding: 9px 11px; }
+.checkout-coupon-control button { min-width: 88px; min-height: 40px; border: 1px solid var(--wine); border-left: 0; padding: 0 11px; background: var(--wine); color: white; cursor: pointer; font-size: 8px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .checkout-coupon-control button:disabled { cursor: not-allowed; opacity: .58; }
 .checkout-coupon-success { margin: -12px 0 18px; color: #285a40; font-size: 9px; font-weight: 700; }
 .order-summary .checkout-discount strong { color: #285a40; }
@@ -621,6 +648,8 @@ em { font-weight: 400; }
   .admin-media-grid { grid-template-columns: repeat(3, 1fr); }
   .admin-discount-layout { grid-template-columns: 1fr; }
   .admin-discount-form { position: static; }
+  .admin-collections-layout { grid-template-columns: 1fr; }
+  .admin-collection-index { position: static; }
 }
 
 @media (max-width: 760px) {
@@ -655,6 +684,10 @@ em { font-weight: 400; }
   .admin-form-3 { grid-template-columns: 1fr; }
   .admin-media-grid { grid-template-columns: 1fr 1fr; }
   .admin-picker { grid-template-columns: 1fr; }
+  .admin-collection-fields, .admin-collection-products { grid-template-columns: 1fr; }
+  .admin-collection-actions { align-items: stretch; flex-direction: column; }
+  .admin-collection-actions .primary-cta { width: 100%; }
+  .checkout-coupon-control button { min-width: 82px; padding-inline: 9px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

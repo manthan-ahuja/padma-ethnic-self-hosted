@@ -189,7 +189,19 @@ function DiscountManager({ products, collections, discounts, pending, run }: { p
 }
 
 function CollectionManager({ products, collections, pending, run }: { products: Product[]; collections: Collection[]; pending: string; run: (key: string, action: () => Promise<void>) => Promise<void> }) {
-  return <section className="admin-section"><div className="admin-section-heading"><h2>Collections</h2><span>{collections.length} collections</span></div><div className="admin-chips">{collections.map((collection) => <span key={collection.id}>{collection.title}</span>)}</div><form action={(form) => run("collection", () => mutate("/api/admin/collections", "POST", { id: form.get("id"), title: form.get("title"), description: form.get("description"), productIds: form.getAll("productIds").map(String), active: true }))} className="admin-form"><label>Handle<input name="id" required placeholder="festive-edit" /></label><label>Title<input name="title" required /></label><label className="admin-wide">Description<input name="description" required /></label><div className="admin-picker admin-full"><h3>Products</h3>{products.map((product) => <label key={product.id}><input type="checkbox" name="productIds" value={product.id} />{product.name}</label>)}</div><button className="primary-cta" disabled={pending === "collection"}>Save collection</button></form></section>;
+  return <section className="admin-collections-layout">
+    <div className="admin-section admin-collection-index">
+      <div className="admin-section-heading"><h2>Collections</h2><span>{collections.length} collections</span></div>
+      <p className="admin-section-intro">Curate focused edits that shoppers can browse from the storefront.</p>
+      <div className="admin-collection-list">{collections.map((collection) => <article key={collection.id}><div><strong>{collection.title}</strong><small>/{collection.id}</small></div><p>{collection.description}</p><span>{collection.active ? "Active" : "Archived"}</span></article>)}</div>
+    </div>
+    <form action={(form) => run("collection", () => mutate("/api/admin/collections", "POST", { id: form.get("id"), title: form.get("title"), description: form.get("description"), productIds: form.getAll("productIds").map(String), active: true }))} className="admin-section admin-collection-editor">
+      <div className="admin-section-heading"><div><p className="eyebrow">New collection</p><h2>Create a curated edit</h2></div></div>
+      <div className="admin-form admin-collection-fields"><label>Handle<input name="id" required placeholder="festive-edit" /></label><label>Title<input name="title" required placeholder="The festive edit" /></label><label className="admin-full">Description<textarea name="description" required placeholder="Describe what brings these pieces together." /></label></div>
+      <div className="admin-collection-products"><div><h3>Select products</h3><span>Choose one or more pieces</span></div>{products.map((product) => <label className="admin-collection-product" key={product.id}><input type="checkbox" name="productIds" value={product.id} /><span className="admin-collection-thumb" style={{ backgroundImage: `url("${product.image.replaceAll('"', '')}")` }} /><span><strong>{product.name}</strong><small>#{product.productNumber ?? "—"} · {product.category}</small></span></label>)}</div>
+      <div className="admin-collection-actions"><span>Collections are published immediately after saving.</span><button className="primary-cta" disabled={pending === "collection"}>{pending === "collection" ? "Saving…" : "Save collection"}</button></div>
+    </form>
+  </section>;
 }
 
 function OrderManager({ orders, pending, run }: { orders: CommerceOrder[]; pending: string; run: (key: string, action: () => Promise<void>) => Promise<void> }) {
