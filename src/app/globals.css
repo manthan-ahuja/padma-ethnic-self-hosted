@@ -644,13 +644,12 @@ em { font-weight: 400; }
 .admin-picker h3 { grid-column: 1 / -1; }
 .admin-picker label { min-height: 38px; display: flex; align-items: center; gap: 8px; font-size: 10px; }
 .admin-picker input { accent-color: var(--wine); }
-.checkout-coupon { margin: 22px 0; border-top: 1px solid var(--line); padding-top: 18px; display: grid; gap: 8px; }
-.checkout-coupon > label { font-size: 8px; letter-spacing: .12em; text-transform: uppercase; }
-.checkout-coupon-control { display: flex; }
-.checkout-coupon-control input { min-width: 0; flex: 1; margin: 0; }
-.checkout-coupon-control input { min-height: 40px; padding: 9px 11px; }
-.checkout-coupon-control button { min-width: 88px; min-height: 40px; border: 1px solid var(--wine); border-left: 0; padding: 0 11px; background: var(--wine); color: white; cursor: pointer; font-size: 8px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
-.checkout-coupon-control button:disabled { cursor: not-allowed; opacity: .58; }
+.order-summary > .checkout-coupon { margin: 18px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 18px 0; display: grid; grid-template-columns: 1fr; justify-content: initial; gap: 9px; }
+.order-summary .checkout-coupon > label { display: block; margin: 0; font-size: 8px; letter-spacing: .12em; text-transform: uppercase; }
+.order-summary .checkout-coupon-control { display: flex; width: 100%; height: 42px; }
+.order-summary .checkout-coupon-control input { min-width: 0; min-height: 42px; height: 42px; flex: 1; margin: 0; padding: 0 12px; border: 1px solid var(--line); border-right: 0; background: rgba(255,255,255,.48); }
+.order-summary .checkout-coupon-control button { width: 76px; min-width: 76px; min-height: 42px; height: 42px; border: 1px solid var(--wine); padding: 0 9px; background: var(--wine); color: white; cursor: pointer; font-size: 8px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.order-summary .checkout-coupon-control button:disabled { cursor: not-allowed; opacity: .58; }
 .checkout-coupon-success { margin: -12px 0 18px; color: #285a40; font-size: 9px; font-weight: 700; }
 .order-summary .checkout-discount strong { color: #285a40; }
 
@@ -674,8 +673,10 @@ em { font-weight: 400; }
   .admin-product, .admin-order { grid-template-columns: 1fr; }
   .admin-hero { align-items: stretch; flex-direction: column; }
   .admin-kpis span { min-width: 0; }
-  .admin-tabs { top: 70px; overflow-x: auto; }
-  .admin-tabs button { min-width: 105px; }
+  .admin-tabs { top: 70px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; }
+  .admin-tabs button { min-width: 0; border-bottom: 1px solid var(--line); }
+  .admin-tabs button:nth-child(2) { border-right: 0; }
+  .admin-tabs button:nth-last-child(-n + 2) { border-bottom: 0; }
   .admin-catalog-layout { grid-template-columns: 1fr; }
   .admin-product-index { position: static; max-height: none; }
   .admin-product-list { max-height: 360px; }
