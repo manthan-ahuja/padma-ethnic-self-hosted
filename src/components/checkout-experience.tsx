@@ -29,6 +29,9 @@ function AuthenticatedCheckout() {
   const [appliedCoupon, setAppliedCoupon] = useState("");
   const [quote, setQuote] = useState<CheckoutQuote | null>(null);
   const [applyingCoupon, setApplyingCoupon] = useState(false);
+  const [addingAddress, setAddingAddress] = useState(false);
+  const [savingAddress, setSavingAddress] = useState(false);
+  const [addressError, setAddressError] = useState("");
   const [attemptKey] = useState(() => crypto.randomUUID());
   const lines = useMemo(() => cart.items.flatMap((item) => item.selection?.variantId
     ? [{ variantId: item.selection.variantId, quantity: item.quantity }]
@@ -91,6 +94,28 @@ function AuthenticatedCheckout() {
     } finally { setApplyingCoupon(false); }
   };
 
+  const saveAddress = async (form: FormData) => {
+    setSavingAddress(true); setAddressError("");
+    try {
+      const payload = {
+        label: String(form.get("label") ?? "Home"), fullName: String(form.get("fullName") ?? ""),
+        phone: String(form.get("phone") ?? ""), address1: String(form.get("address1") ?? ""),
+        address2: String(form.get("address2") ?? ""), city: String(form.get("city") ?? ""),
+        state: String(form.get("state") ?? ""), postalCode: String(form.get("postalCode") ?? ""),
+        country: "India", isDefault: addresses.length === 0 || form.get("isDefault") === "on",
+      };
+      const response = await fetch("/api/account/addresses", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+      });
+      const result = await response.json() as { address?: CustomerAddress; error?: string };
+      if (!response.ok || !result.address) throw new Error(result.error || "Unable to save the address.");
+      setAddresses((current) => [result.address!, ...current.map((address) => result.address!.isDefault ? { ...address, isDefault: false } : address)]);
+      setAddressId(result.address.id); setAddingAddress(false);
+    } catch (reason) {
+      setAddressError(reason instanceof Error ? reason.message : "Unable to save the address.");
+    } finally { setSavingAddress(false); }
+  };
+
   if (loading) return <main className="checkout-page"><p>Preparing secure checkout…</p></main>;
   if (order) return <main className="checkout-page checkout-success"><CheckCircle2 size={44} /><p className="eyebrow">Order placed</p><h1>Thank you</h1><p>Your order <strong>{order.number}</strong> has been reserved. Pay {money.format(order.total)} by cash on delivery.</p><Link className="primary-cta" href="/account">View my orders</Link></main>;
   if (!cart.items.length) return <main className="checkout-page"><p className="eyebrow">Checkout</p><h1>Your bag is empty</h1><Link className="primary-cta" href="/collections/all">Explore the collection</Link></main>;
@@ -102,8 +127,21 @@ function AuthenticatedCheckout() {
     <header><p className="eyebrow">Secure self-hosted checkout</p><h1>Delivery &amp; payment</h1></header>
     <div className="checkout-grid">
       <section>
-        <h2>Delivery address</h2>
-        {addresses.length ? <div className="checkout-addresses">{addresses.map((address) => <label key={address.id} className={addressId === address.id ? "is-selected" : ""}><input type="radio" name="address" checked={addressId === address.id} onChange={() => setAddressId(address.id)} /><strong>{address.label}</strong><span>{address.fullName}</span><span>{address.address1}{address.address2 ? `, ${address.address2}` : ""}</span><span>{address.city}, {address.state} {address.postalCode}</span><span>{address.phone}</span></label>)}</div> : <div className="checkout-no-address"><p>Add a delivery address before placing your order.</p><Link href="/account">Add an address in My Account</Link></div>}
+        <div className="checkout-section-heading"><h2>Delivery address</h2><button type="button" onClick={() => { setAddingAddress((value) => !value); setAddressError(""); }}>{addingAddress ? "Cancel" : "Add delivery address"}</button></div>
+        {addingAddress && <form action={saveAddress} className="checkout-address-form">
+          <label>Label<input name="label" defaultValue="Home" required /></label>
+          <label>Full name<input name="fullName" autoComplete="name" required /></label>
+          <label>Phone<input name="phone" inputMode="tel" autoComplete="tel" required /></label>
+          <label className="checkout-address-wide">Address line 1<input name="address1" autoComplete="address-line1" required /></label>
+          <label className="checkout-address-wide">Address line 2 <span>(optional)</span><input name="address2" autoComplete="address-line2" /></label>
+          <label>City<input name="city" autoComplete="address-level2" required /></label>
+          <label>State<input name="state" autoComplete="address-level1" required /></label>
+          <label>Postal code<input name="postalCode" inputMode="numeric" autoComplete="postal-code" required /></label>
+          {addresses.length > 0 && <label className="checkout-address-default"><input name="isDefault" type="checkbox" /> Make this my default address</label>}
+          {addressError && <p className="selection-message is-error checkout-address-wide" role="alert">{addressError}</p>}
+          <button className="account-primary-action" type="submit" disabled={savingAddress}>{savingAddress ? "Saving address…" : "Save and use this address"}</button>
+        </form>}
+        {addresses.length ? <div className="checkout-addresses">{addresses.map((address) => <label key={address.id} className={addressId === address.id ? "is-selected" : ""}><input type="radio" name="address" checked={addressId === address.id} onChange={() => setAddressId(address.id)} /><strong>{address.label}</strong><span>{address.fullName}</span><span>{address.address1}{address.address2 ? `, ${address.address2}` : ""}</span><span>{address.city}, {address.state} {address.postalCode}</span><span>{address.phone}</span></label>)}</div> : !addingAddress && <div className="checkout-no-address"><p>No saved delivery address yet. Use “Add delivery address” above to continue.</p></div>}
         <h2>Payment</h2>
         <label className="checkout-payment is-selected"><input type="radio" checked readOnly /><span><strong>Cash on delivery</strong><small>Pay when your order arrives.</small></span></label>
       </section>
