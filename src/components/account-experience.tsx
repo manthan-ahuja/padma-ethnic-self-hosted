@@ -82,13 +82,14 @@ export function AccountExperience({ configured }: { configured: boolean }) {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(credentials),
             }));
+            return;
           }
           const result = await signIn("credentials", {
             email: credentials.email,
             password: credentials.password,
             redirect: false,
           });
-          if (!result?.ok) throw new Error("Unable to sign in with those details.");
+          if (!result?.ok) throw new Error("Email or password is incorrect. If you are new, sign up first.");
         }}
       />
     );

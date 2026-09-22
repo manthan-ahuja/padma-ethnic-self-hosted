@@ -4,6 +4,18 @@ import { describe, expect, it } from "vitest";
 import { createCustomerStore } from "./customer-store";
 
 describe("customer store", () => {
+  it("does not create an account when an unknown customer attempts to log in", async () => {
+    const databasePath = join(process.cwd(), ".data", `customer-store-${randomUUID()}.db`);
+    const store = createCustomerStore(`file:${databasePath.replaceAll("\\", "/")}`);
+
+    try {
+      await expect(store.authenticatePassword("new@example.com", "a-long-test-password")).resolves.toBeNull();
+      await expect(store.createPasswordUser({ name: "New Customer", email: "new@example.com", password: "a-long-test-password" })).resolves.toMatchObject({ email: "new@example.com" });
+    } finally {
+      await store.close();
+    }
+  });
+
   it("creates a password account that can authenticate", async () => {
     const databasePath = join(process.cwd(), ".data", `customer-store-${randomUUID()}.db`);
     const store = createCustomerStore(`file:${databasePath.replaceAll("\\", "/")}`);

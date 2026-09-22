@@ -353,6 +353,7 @@ em { font-weight: 400; }
 .account-primary-action { min-height: 48px; border: 1px solid var(--wine); padding: 0 20px; background: var(--wine); color: #fff9f0; cursor: pointer; font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
 .account-primary-action:disabled { cursor: wait; opacity: .6; }
 .account-form-error, .account-page-error { color: #8f271d; font-size: 12px; line-height: 1.5; }
+.account-form-success { margin: 0; border: 1px solid rgba(40,90,64,.24); padding: 11px 13px; background: #f3f8f1; color: #285a40; font-size: 12px; line-height: 1.5; }
 .account-page-error { grid-column: 1 / -1; margin: 0; padding: 13px 18px; border: 1px solid rgba(177,55,32,.25); background: #fff7f2; }
 .account-page-error button { border: 0; padding: 4px 8px; background: transparent; color: inherit; font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
 .account-auth-divider { margin: 24px 0; border-top: 1px solid var(--line); text-align: center; }
